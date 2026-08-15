@@ -1,0 +1,17 @@
+# folia-nexa-mgmt's base URL, reachable from wherever this world's
+# container actually runs (LAN address at home, or mgmt's WireGuard-
+# reachable address once this world sits behind the VPS edge — see
+# docs/vps-edge-deployment.md in the FoliaNexa repo). Reports go to
+# POST {mgmt-base-url}/api/v1/stats/report.
+mgmt-base-url: "http://mgmt.internal:8443"
+
+# An operator-role folia-nexa-mgmt API token (issued the same way the
+# proxy/bot service accounts are — see FoliaNexa's CLAUDE.md Phases 7-8).
+# Required: without one, reports fail with 401 and this plugin logs a
+# warning rather than silently discarding data.
+mgmt-api-token: ""
+
+# How often (in seconds) to batch every currently-known player's stats
+# into one report. Kept out of game-tick threads entirely — the actual
+# HTTP call always runs on Bukkit's AsyncScheduler.
+report-interval-seconds: 60

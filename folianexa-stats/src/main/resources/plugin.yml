@@ -1,0 +1,18 @@
+name: FoliaNexaStats
+version: '0.1.0'
+main: io.github.kenvandine.folianexastats.FoliaNexaStatsPlugin
+api-version: '1.21'
+softdepend: [AuraSkills, Vault]
+
+commands:
+  foliaNexaStats:
+    description: Reload FoliaNexaStats' config, or trigger an immediate report.
+    usage: /foliaNexaStats <reload|report>
+
+permissions:
+  foliaNexaStats.reload:
+    description: Reload FoliaNexaStats' config.yml without a restart.
+    default: op
+  foliaNexaStats.report:
+    description: Trigger an immediate stats report instead of waiting for the next interval.
+    default: op
