@@ -1,0 +1,114 @@
+name: Release a plugin
+
+# This repo is a monorepo — each plugin is a standalone Gradle project in
+# its own top-level directory (see README.md's "Adding a new plugin").
+# A release always belongs to exactly one plugin, so both trigger paths
+# below identify the plugin the same way: a tag/version of the form
+# "<plugin-directory>-v<semver>", e.g. "folianexa-stats-v0.1.0".
+#
+# Two ways to cut a release:
+#   1. Push a tag matching that pattern — the workflow builds that
+#      plugin and creates a release from the tag that triggered it.
+#   2. Run this workflow manually (Actions tab -> Release a plugin ->
+#      Run workflow) with the plugin directory and version as inputs —
+#      useful when you'd rather not create the tag by hand first; the
+#      workflow creates it (pointing at whichever branch/commit you ran
+#      the workflow from) as part of publishing the release.
+#
+# Either way: builds with the plugin's own Gradle wrapper (so each
+# plugin's pinned Gradle version is what actually runs, not whatever this
+# workflow assumes), runs its test suite, and only proceeds to release if
+# that succeeds — see docs/plugin-dev/03-submitting-for-review.md in the
+# FoliaNexa repo for the self-review checklist this doesn't replace
+# (Folia-safe scheduling, a real test server smoke check, etc. are still
+# on you before tagging a release in the first place).
+
+on:
+  push:
+    tags:
+      - "*-v*.*.*"
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: "Plugin directory (e.g. folianexa-stats)"
+        required: true
+        type: string
+      version:
+        description: "Version to release (e.g. 0.1.0, no leading v)"
+        required: true
+        type: string
+
+permissions:
+  contents: write # to create the release (and, for workflow_dispatch, the tag)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine plugin and tag
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            plugin="${{ inputs.plugin }}"
+            version="${{ inputs.version }}"
+            tag="${plugin}-v${version}"
+          else
+            tag="${GITHUB_REF_NAME}"
+            plugin="${tag%-v*}"
+            version="${tag##*-v}"
+          fi
+
+          if [ ! -d "$plugin" ]; then
+            echo "::error::No such plugin directory: '$plugin' (parsed from '$tag'). Expected <plugin-directory>-v<semver>, e.g. folianexa-stats-v0.1.0." >&2
+            exit 1
+          fi
+          if [ ! -x "$plugin/gradlew" ]; then
+            echo "::error::$plugin/gradlew not found or not executable — is this a real plugin directory (see README.md's 'Adding a new plugin' for the expected shape)?" >&2
+            exit 1
+          fi
+
+          echo "plugin=$plugin" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Build and test
+        working-directory: ${{ steps.vars.outputs.plugin }}
+        run: ./gradlew build
+
+      - name: Locate the built jar
+        id: jar
+        working-directory: ${{ steps.vars.outputs.plugin }}
+        run: |
+          mapfile -t jars < <(find build/libs -maxdepth 1 -name "*.jar")
+          if [ "${#jars[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one jar in build/libs, found ${#jars[@]}: ${jars[*]}" >&2
+            exit 1
+          fi
+          echo "path=${{ steps.vars.outputs.plugin }}/${jars[0]}" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "${jars[0]}")" >> "$GITHUB_OUTPUT"
+          sha256sum "${jars[0]}"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.vars.outputs.tag }}" \
+            "${{ steps.jar.outputs.path }}" \
+            --title "${{ steps.vars.outputs.plugin }} v${{ steps.vars.outputs.version }}" \
+            --generate-notes \
+            --target "${{ github.sha }}"
+
+      - name: Summary
+        run: |
+          echo "### Released \`${{ steps.jar.outputs.name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "sha256: \`$(sha256sum "${{ steps.jar.outputs.path }}" | cut -d' ' -f1)\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Next: copy the release's download URL and sha256 into the \`FoliaNexa\` repo's \`mgmt/src/folia_mgmt/catalog.yaml\` entry for this plugin — see docs/plugin-dev/03-submitting-for-review.md there." >> "$GITHUB_STEP_SUMMARY"
