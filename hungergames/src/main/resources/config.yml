@@ -1,0 +1,179 @@
+# HungerGames configuration.
+# Edit, then run "/hungergames reload" (alias "/hg reload") — no restart
+# needed. A match already in progress on an arena keeps its old settings
+# until it finishes; the new config applies starting the arena's *next*
+# match (same "reload doesn't retroactively apply" caveat as CampusLobby's
+# config.yml).
+
+# Base rules every match starts from. A "twist" (see the twists: section
+# below) can override any of the per-match fields (grace-period-seconds
+# through deathmatch-border-diameter) for a single match — everything else
+# here always applies.
+game:
+  min-players: 2
+  max-players: 24
+
+  # How long the queue counts down once min-players is reached, and how
+  # long the countdown-cancel-and-requeue grace is if players leave during it.
+  countdown-seconds: 30
+
+  # Tributes spawn invulnerable and unable to hit each other for this long
+  # before the match goes hot — enough time to grab starting loot without
+  # getting jumped standing on the spawn pedestals.
+  grace-period-seconds: 30
+
+  # How long the match runs (border continuously shrinking from the arena's
+  # initial-border-radius down to final-border-diameter, see arenas: below)
+  # before the deathmatch is forced if more than one tribute is still alive.
+  game-length-seconds: 900
+
+  # Once the deathmatch triggers, survivors are pulled to the arena's
+  # deathmatch-spawn-points and the border slams shut to
+  # deathmatch-border-diameter over this many seconds.
+  deathmatch-countdown-seconds: 15
+
+  # How long after a winner is decided before everyone gets teleported back
+  # to the lobby (lets the "X has won!" message land before the world change).
+  ending-seconds: 10
+
+  # World-border diameter (in blocks) the play area shrinks down to by the
+  # end of the normal game-length-seconds phase, and the much tighter ring
+  # it slams shut to for the deathmatch. Both use Bukkit's real per-world
+  # WorldBorder, so shrinking is smoothly animated and damage/warning-fog
+  # outside it is entirely native — see the hungergames plugin's README for
+  # why that means one arena = one dedicated Bukkit world.
+  final-border-diameter: 20
+  deathmatch-border-diameter: 6
+  border-damage-amount: 1.0
+  border-damage-buffer: 4.0
+  border-warning-distance: 5
+
+  # How many loot rolls (see loot: below) each configured chest gets,
+  # picked randomly per chest in this range. A "double loot" twist
+  # multiplies this count, not the range itself.
+  items-per-chest-min: 2
+  items-per-chest-max: 5
+
+  # Where players are returned after a match ends, or after using
+  # "/hungergames leave" while only queued (not yet playing).
+  lobby-world: world
+  lobby-spawn: {x: 0, y: 100, z: 0, yaw: 0, pitch: 0}
+
+# The loot table every arena's chests are stocked from at the start of each
+# match (existing chest contents are cleared first). material is a
+# org.bukkit.Material name; weight is relative (bigger = more common, no
+# need to sum to 100). Add/remove/reweight entries freely.
+loot:
+  - {material: WOODEN_SWORD, min-amount: 1, max-amount: 1, weight: 6}
+  - {material: STONE_SWORD, min-amount: 1, max-amount: 1, weight: 4}
+  - {material: IRON_SWORD, min-amount: 1, max-amount: 1, weight: 2}
+  - {material: BOW, min-amount: 1, max-amount: 1, weight: 3}
+  - {material: ARROW, min-amount: 4, max-amount: 12, weight: 5}
+  - {material: LEATHER_CHESTPLATE, min-amount: 1, max-amount: 1, weight: 3}
+  - {material: IRON_CHESTPLATE, min-amount: 1, max-amount: 1, weight: 1}
+  - {material: SHIELD, min-amount: 1, max-amount: 1, weight: 2}
+  - {material: COOKED_BEEF, min-amount: 2, max-amount: 6, weight: 8}
+  - {material: BREAD, min-amount: 2, max-amount: 5, weight: 6}
+  - {material: GOLDEN_APPLE, min-amount: 1, max-amount: 1, weight: 1}
+  - {material: IRON_INGOT, min-amount: 1, max-amount: 3, weight: 3}
+  - {material: FLINT_AND_STEEL, min-amount: 1, max-amount: 1, weight: 1}
+  - {material: SPLASH_POTION, min-amount: 1, max-amount: 1, weight: 1}
+
+# Twists are optional per-match rule modifiers layered on top of game:
+# above — a Quarter-Quell-style surprise, chosen (weighted, at most one)
+# whenever a match starts. Add a brand-new twist entirely here — no code
+# changes needed: every field but id/display-name/description/weight is
+# optional, and omitting a field leaves that base game: rule unchanged for
+# that twist. display-name supports "&"-style color codes.
+twists:
+  enabled: true
+  # Overall probability that ANY twist is applied to a given match, before
+  # the weighted pick among pool below decides which one. 0 disables
+  # twists without needing to touch `enabled` or clear the pool.
+  chance: 0.35
+  pool:
+    - id: bloodbath
+      display-name: "&cBloodbath"
+      description: "No grace period — the fight starts the instant tributes land."
+      weight: 3
+      grace-period-seconds: 0
+
+    - id: cornucopia-of-plenty
+      display-name: "&6Cornucopia of Plenty"
+      description: "Every chest is stocked twice as heavily."
+      weight: 3
+      loot-multiplier: 2.0
+
+    - id: quarter-quell
+      display-name: "&4Quarter Quell"
+      description: "The arena closes in fast, and the final ring is brutally tight."
+      weight: 2
+      game-length-seconds: 480
+      final-border-diameter: 12
+      deathmatch-border-diameter: 4
+
+    - id: sudden-death
+      display-name: "&5Sudden Death"
+      description: "A much shorter game before the deathmatch begins."
+      weight: 2
+      game-length-seconds: 300
+
+    - id: nightlock-fog
+      display-name: "&2Nightlock Fog"
+      description: "Every tribute starts nauseated and briefly blinded — good luck."
+      weight: 1
+      potion-effects:
+        - {type: NAUSEA, amplifier: 1, duration-seconds: 60}
+        - {type: BLINDNESS, amplifier: 0, duration-seconds: 10}
+
+    - id: careers-advantage
+      display-name: "&bCareer's Advantage"
+      description: "Everyone starts with a burst of speed off the pedestals."
+      weight: 2
+      potion-effects:
+        - {type: SPEED, amplifier: 1, duration-seconds: 30}
+
+# Maps ("arenas") tributes can queue for. Each one is its own dedicated
+# Bukkit world (see this plugin's README for why) — add a new map by
+# building it in a fresh world, placing empty chests where you want loot,
+# then copying this block with new coordinates. No code changes needed.
+#
+#   world                    the arena's dedicated world's name
+#   corner1 / corner2        informational bounding box of the play area
+#                            (not currently enforced — reserved for a
+#                            future "no building outside the arena" check)
+#   border-center            x/z the shrinking world border centers on
+#   initial-border-radius    border radius (blocks) at match start
+#   spawn-points             one per tribute; if there are more tributes
+#                            queued than points, arena capacity is capped
+#                            to the number of points (see the README)
+#   deathmatch-spawn-points  where survivors are pulled together for the
+#                            deathmatch; falls back to spawn-points if empty
+#   chest-locations          exact block coordinates of pre-built (empty)
+#                            chests to stock with loot each match
+arenas:
+  - id: example
+    display-name: "Example Cornucopia"
+    world: hg_example
+    corner1: {x: -100, y: 0, z: -100}
+    corner2: {x: 100, y: 255, z: 100}
+    border-center: {x: 0, y: 65, z: 0}
+    initial-border-radius: 90
+    spawn-points:
+      - {x: 20, y: 65, z: 0, yaw: 90}
+      - {x: -20, y: 65, z: 0, yaw: -90}
+      - {x: 0, y: 65, z: 20, yaw: 180}
+      - {x: 0, y: 65, z: -20, yaw: 0}
+      - {x: 14, y: 65, z: 14, yaw: 135}
+      - {x: -14, y: 65, z: 14, yaw: -135}
+      - {x: 14, y: 65, z: -14, yaw: 45}
+      - {x: -14, y: 65, z: -14, yaw: -45}
+    deathmatch-spawn-points:
+      - {x: 2, y: 65, z: 0, yaw: 90}
+      - {x: -2, y: 65, z: 0, yaw: -90}
+    chest-locations:
+      - {x: 0, y: 65, z: 0}
+      - {x: 5, y: 65, z: 5}
+      - {x: -5, y: 65, z: 5}
+      - {x: 5, y: 65, z: -5}
+      - {x: -5, y: 65, z: -5}
