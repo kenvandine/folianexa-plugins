@@ -2,6 +2,7 @@ name: FoliaNexaStats
 version: '${version}'
 main: io.github.kenvandine.folianexastats.FoliaNexaStatsPlugin
 api-version: '1.21'
+folia-supported: true
 softdepend: [AuraSkills, Vault]
 
 commands:
