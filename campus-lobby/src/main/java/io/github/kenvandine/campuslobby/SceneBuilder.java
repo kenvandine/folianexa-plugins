@@ -13,6 +13,8 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Rotatable;
 import org.bukkit.block.sign.Side;
 import org.bukkit.block.sign.SignSide;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
@@ -21,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Places a generated {@link CampusScene.Scene} into a real world. This is
+ * Places a generated {@link CampusScene.Scene} into a real world: clears
+ * leftover terrain from the build area, places the scene's blocks/signs,
+ * and points the world's spawn and border at the finished lobby. This is
  * the only class in the plugin that touches game state, and it does so
  * Folia-safely: block placements are grouped by the chunk they land in
  * and each chunk's group is scheduled on {@link Bukkit#getRegionScheduler()}
@@ -29,7 +33,9 @@ import java.util.Map;
  * whatever thread the command/listener happened to run on (which under
  * Folia's regionized ticking is not guaranteed to own that chunk's
  * region — see docs/plugin-dev/02-plugin-architecture.md §2.3 in the
- * folia-server repo).
+ * folia-server repo). World-scoped state (spawn point, border) isn't
+ * owned by any single chunk's region, so it goes through
+ * {@link Bukkit#getGlobalRegionScheduler()} instead.
  */
 public final class SceneBuilder {
 
@@ -49,6 +55,21 @@ public final class SceneBuilder {
         int originX = origin.getBlockX();
         int originY = origin.getBlockY();
         int originZ = origin.getBlockZ();
+
+        // The clear area always starts at the plaza floor (relative y=0)
+        // and extends upward past the scene's own bounds — it never digs
+        // below the floor, so a build can't leave a hole underneath it.
+        CampusScene.Bounds sceneBounds = scene.bounds();
+        CampusScene.Bounds clearBounds = new CampusScene.Bounds(
+                sceneBounds.minX() - config.clear().padding(), sceneBounds.maxX() + config.clear().padding(),
+                0, sceneBounds.maxY() + config.clear().heightAbove(),
+                sceneBounds.minZ() - config.clear().padding(), sceneBounds.maxZ() + config.clear().padding()
+        );
+
+        // Scheduled (submitted) before the block placements below, so it
+        // runs first within any chunk the two share — each chunk's region
+        // task queue is FIFO in submission order.
+        scheduleClear(plugin, world, originX, originY, originZ, clearBounds);
 
         Map<Long, List<BlockPlacement>> byChunk = new HashMap<>();
         for (BlockPlacement placement : scene.blocks()) {
@@ -72,6 +93,87 @@ public final class SceneBuilder {
             Bukkit.getRegionScheduler().run(plugin, world, worldX >> 4, worldZ >> 4, task ->
                     placeSign(world, worldX, worldY, worldZ, sign));
         }
+
+        scheduleSpawnAndBorder(plugin, world, originX, originY, originZ, clearBounds, config.borderMargin());
+    }
+
+    /**
+     * Sets every block in the (already padded) clear bounds to air, so
+     * leftover terrain — trees, hills, whatever was there before — can't
+     * poke through the finished scene, and removes every non-player
+     * entity in that same volume (mobs, dropped items, minecarts, etc.)
+     * so the build starts from a genuinely empty area. Grouped and
+     * scheduled per chunk like the block placements below, for the same
+     * Folia-safety reason.
+     */
+    private static void scheduleClear(Plugin plugin, World world, int originX, int originY, int originZ, CampusScene.Bounds bounds) {
+        int worldXMin = originX + bounds.minX();
+        int worldXMax = originX + bounds.maxX();
+        int worldZMin = originZ + bounds.minZ();
+        int worldZMax = originZ + bounds.maxZ();
+        int yMin = Math.max(world.getMinHeight(), originY + bounds.minY());
+        int yMax = Math.min(world.getMaxHeight() - 1, originY + bounds.maxY());
+
+        Map<Long, List<int[]>> columnsByChunk = new HashMap<>();
+        for (int x = worldXMin; x <= worldXMax; x++) {
+            for (int z = worldZMin; z <= worldZMax; z++) {
+                columnsByChunk.computeIfAbsent(chunkKey(x >> 4, z >> 4), key -> new ArrayList<>())
+                        .add(new int[]{x, z});
+            }
+        }
+
+        for (List<int[]> columns : columnsByChunk.values()) {
+            int[] first = columns.get(0);
+            int chunkX = first[0] >> 4;
+            int chunkZ = first[1] >> 4;
+            Bukkit.getRegionScheduler().run(plugin, world, chunkX, chunkZ, task -> {
+                for (int[] column : columns) {
+                    for (int y = yMin; y <= yMax; y++) {
+                        world.getBlockAt(column[0], y, column[1]).setType(Material.AIR, false);
+                    }
+                }
+                for (Entity entity : world.getChunkAt(chunkX, chunkZ).getEntities()) {
+                    if (entity instanceof Player) {
+                        continue;
+                    }
+                    Location loc = entity.getLocation();
+                    if (loc.getBlockX() >= worldXMin && loc.getBlockX() <= worldXMax
+                            && loc.getBlockZ() >= worldZMin && loc.getBlockZ() <= worldZMax
+                            && loc.getBlockY() >= yMin && loc.getBlockY() <= yMax) {
+                        entity.remove();
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Sets the lobby world's spawn point to the build origin (so anyone
+     * spawning/respawning in this world lands in the same place), shrinks
+     * its world border to the cleared scene area plus a margin (so the
+     * lobby is just that — a hub players can't wander out of), and turns
+     * off natural monster/animal spawning (the lobby is a hub, not
+     * somewhere mobs should be showing up — CampusLobbyListener backs
+     * this up by cancelling any spawn that slips through, e.g. from a
+     * spawner or spawn egg). All world-scoped, not chunk-owned, so they
+     * go through the global region scheduler rather than a chunk-targeted
+     * one.
+     */
+    private static void scheduleSpawnAndBorder(Plugin plugin, World world, int originX, int originY, int originZ,
+                                                 CampusScene.Bounds clearBounds, int borderMargin) {
+        double centerX = originX + (clearBounds.minX() + clearBounds.maxX()) / 2.0 + 0.5;
+        double centerZ = originZ + (clearBounds.minZ() + clearBounds.maxZ()) / 2.0 + 0.5;
+        double width = clearBounds.maxX() - clearBounds.minX();
+        double depth = clearBounds.maxZ() - clearBounds.minZ();
+        double size = Math.max(width, depth) + 2.0 * borderMargin;
+
+        Bukkit.getGlobalRegionScheduler().run(plugin, task -> {
+            world.setSpawnLocation(originX, originY, originZ);
+            world.getWorldBorder().setCenter(centerX, centerZ);
+            world.getWorldBorder().setSize(size);
+            world.getWorldBorder().setDamageAmount(0);
+            world.setSpawnFlags(false, false);
+        });
     }
 
     private static void placeBlock(World world, int x, int y, int z, String materialName) {

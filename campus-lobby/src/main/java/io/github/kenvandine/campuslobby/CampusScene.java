@@ -23,7 +23,11 @@ public final class CampusScene {
     private CampusScene() {
     }
 
-    public record Scene(List<BlockPlacement> blocks, List<SignPlacement> signs) {
+    public record Scene(List<BlockPlacement> blocks, List<SignPlacement> signs, Bounds bounds) {
+    }
+
+    /** The axis-aligned extent (inclusive) of every block/sign in a Scene, relative to the scene origin. */
+    public record Bounds(int minX, int maxX, int minY, int maxY, int minZ, int maxZ) {
     }
 
     public static Scene generate(SceneConfig cfg) {
@@ -275,8 +279,25 @@ public final class CampusScene {
         private final List<BlockPlacement> blocks = new ArrayList<>();
         private final List<SignPlacement> signs = new ArrayList<>();
 
+        private int minX = Integer.MAX_VALUE;
+        private int maxX = Integer.MIN_VALUE;
+        private int minY = Integer.MAX_VALUE;
+        private int maxY = Integer.MIN_VALUE;
+        private int minZ = Integer.MAX_VALUE;
+        private int maxZ = Integer.MIN_VALUE;
+
         void set(int x, int y, int z, String material) {
             blocks.add(new BlockPlacement(x, y, z, material));
+            grow(x, y, z);
+        }
+
+        private void grow(int x, int y, int z) {
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+            minZ = Math.min(minZ, z);
+            maxZ = Math.max(maxZ, z);
         }
 
         void fillBox(int x1, int y1, int z1, int x2, int y2, int z2, String material) {
@@ -308,10 +329,15 @@ public final class CampusScene {
 
         void sign(int x, int y, int z, int rotation, String... lines) {
             signs.add(new SignPlacement(x, y, z, rotation, List.of(lines)));
+            grow(x, y, z);
         }
 
         Scene toScene() {
-            return new Scene(List.copyOf(blocks), List.copyOf(signs));
+            boolean empty = blocks.isEmpty() && signs.isEmpty();
+            Bounds bounds = empty
+                    ? new Bounds(0, 0, 0, 0, 0, 0)
+                    : new Bounds(minX, maxX, minY, maxY, minZ, maxZ);
+            return new Scene(List.copyOf(blocks), List.copyOf(signs), bounds);
         }
     }
 }

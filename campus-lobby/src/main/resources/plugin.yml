@@ -17,3 +17,6 @@ permissions:
   campuslobby.reload:
     description: Reload CampusLobby's config
     default: op
+  campuslobby.admin:
+    description: Bypass the built lobby world's protection (break/place blocks, use buckets there).
+    default: op

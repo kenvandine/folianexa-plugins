@@ -38,7 +38,9 @@ class CampusSceneTest {
                 defaults.towerHeight(),
                 defaults.include(),
                 defaults.colors(),
-                Map.of("belltower", "Custom Tower Name")
+                Map.of("belltower", "Custom Tower Name"),
+                defaults.clear(),
+                defaults.borderMargin()
         );
 
         CampusScene.Scene scene = CampusScene.generate(cfg);
@@ -56,7 +58,9 @@ class CampusSceneTest {
                 defaults.towerHeight(),
                 new SceneConfig.Include(true, false, false, false, false),
                 defaults.colors(),
-                Map.of()
+                Map.of(),
+                defaults.clear(),
+                defaults.borderMargin()
         );
 
         CampusScene.Scene scene = CampusScene.generate(cfg);
@@ -115,7 +119,9 @@ class CampusSceneTest {
                 defaults.towerHeight(),
                 new SceneConfig.Include(false, false, false, false, false),
                 defaults.colors(),
-                Map.of()
+                Map.of(),
+                defaults.clear(),
+                defaults.borderMargin()
         );
 
         CampusScene.Scene scene = CampusScene.generate(cfg);
@@ -125,13 +131,34 @@ class CampusSceneTest {
     }
 
     @Test
+    void boundsEncloseEveryBlockAndSign() {
+        CampusScene.Scene scene = CampusScene.generate(SceneConfig.defaults());
+        CampusScene.Bounds bounds = scene.bounds();
+
+        for (BlockPlacement block : scene.blocks()) {
+            assertTrue(block.dx() >= bounds.minX() && block.dx() <= bounds.maxX());
+            assertTrue(block.dy() >= bounds.minY() && block.dy() <= bounds.maxY());
+            assertTrue(block.dz() >= bounds.minZ() && block.dz() <= bounds.maxZ());
+        }
+        for (SignPlacement sign : scene.signs()) {
+            assertTrue(sign.dx() >= bounds.minX() && sign.dx() <= bounds.maxX());
+            assertTrue(sign.dy() >= bounds.minY() && sign.dy() <= bounds.maxY());
+            assertTrue(sign.dz() >= bounds.minZ() && sign.dz() <= bounds.maxZ());
+        }
+        // The plaza floor sits at relative y=0; nothing should be generated below it.
+        assertEquals(0, bounds.minY());
+    }
+
+    @Test
     void smallerPlazaRadiusStillGeneratesWithoutError() {
         SceneConfig cfg = new SceneConfig(
                 16,
                 20,
                 SceneConfig.defaults().include(),
                 SceneConfig.defaults().colors(),
-                Map.of()
+                Map.of(),
+                SceneConfig.defaults().clear(),
+                SceneConfig.defaults().borderMargin()
         );
 
         CampusScene.Scene scene = CampusScene.generate(cfg);

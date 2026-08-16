@@ -29,6 +29,11 @@ public final class CampusLobbyCommand implements CommandExecutor {
             SceneConfig config = ConfigLoader.load(plugin.getConfig());
             SceneBuilder.build(plugin, origin.getWorld(), origin, config);
 
+            String worldName = origin.getWorld().getName();
+            plugin.setLobbyWorldName(worldName);
+            new LobbyStateStore(plugin).save(new LobbyState(
+                    worldName, origin.getBlockX(), origin.getBlockY(), origin.getBlockZ()));
+
             sender.sendMessage("Building the NC State Wolfpack lobby scene at "
                     + origin.getBlockX() + ", " + origin.getBlockY() + ", " + origin.getBlockZ()
                     + " — it's placed chunk-by-chunk, give it a few seconds to finish.");

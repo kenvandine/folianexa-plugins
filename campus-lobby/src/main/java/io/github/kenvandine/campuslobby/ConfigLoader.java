@@ -44,6 +44,12 @@ final class ConfigLoader {
             }
         }
 
-        return new SceneConfig(plazaRadius, towerHeight, include, colors, signLabels);
+        SceneConfig.Clear clear = new SceneConfig.Clear(
+                config.getInt("scene.clear.padding", defaults.clear().padding()),
+                config.getInt("scene.clear.height-above", defaults.clear().heightAbove())
+        );
+        int borderMargin = config.getInt("scene.border-margin", defaults.borderMargin());
+
+        return new SceneConfig(plazaRadius, towerHeight, include, colors, signLabels, clear, borderMargin);
     }
 }

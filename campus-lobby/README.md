@@ -15,6 +15,15 @@ other external geometry assets involved. It is not affiliated with,
 endorsed by, or an accurate reproduction of North Carolina State
 University's actual campus.
 
+Building a scene turns its world into a locked-down hub: leftover terrain
+and entities (rogue trees, mobs, dropped items, etc.) in the build area
+are cleared first, only `campuslobby.admin` holders can break/place
+blocks or use buckets there afterward, no mobs spawn, players' inventory
+is cleared on entry and can't be added to while there, the world's spawn
+point is set to the build origin, and a world border is drawn tightly
+around the finished scene so nobody can wander out of it. It's meant to
+stay exactly as built.
+
 The lobby is a jumping-off point to other worlds in the cluster — see
 [`docs/plugin-dev`](https://github.com/kenvandine/FoliaNexa/tree/main/docs/plugin-dev)
 and PLAN.md §14B in the [`FoliaNexa`](https://github.com/kenvandine/FoliaNexa)
@@ -50,17 +59,23 @@ for running a local test server.
 - `/campuslobby build` — generates the scene centered on the sender's
   current location (or the world's spawn, from console). Placement is
   chunk-by-chunk via Paper's region scheduler, so it can take a few
-  seconds to finish on a big plaza.
+  seconds to finish on a big plaza. Also clears the build area, sets the
+  world's spawn point and border, and applies the lobby's block-edit
+  protection (see above) to whichever world it was run in.
 - `/campuslobby reload` — reloads `config.yml` without a restart. Run
   `build` again afterward to apply changed scene settings; reload alone
   does not retroactively edit already-placed blocks.
+
+`campuslobby.admin` (default: op) bypasses the built lobby world's
+block-edit protection.
 
 ## Configuration
 
 `config.yml` is generated on first run. It controls the plaza size,
 tower height, which landmarks are included, the block palette (default:
-concrete/brick in Wolfpack red/white/black), and the text shown on each
-landmark's sign.
+concrete/brick in Wolfpack red/white/black), the text shown on each
+landmark's sign, and how much area around the scene gets cleared/how
+much margin the world border leaves beyond it.
 
 ## License
 

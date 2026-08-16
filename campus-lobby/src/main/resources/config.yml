@@ -31,6 +31,25 @@ scene:
     glass: WHITE_STAINED_GLASS_PANE
     roof: BLACKSTONE
 
+  # Clears leftover terrain (rogue trees, hills, floating debris, etc.)
+  # from the build area before placing the scene. The clear always
+  # starts at the plaza floor and works upward — it never digs below
+  # the floor, so it can't leave a hole under the plaza.
+  clear:
+    # Horizontal margin (blocks) cleared beyond the generated scene's
+    # own footprint.
+    padding: 10
+    # Vertical margin (blocks) cleared above the tallest generated
+    # feature (the Belltower spire, by default).
+    height-above: 16
+
+  # Extra margin (blocks) beyond the cleared area before the world
+  # border kicks in. The lobby world's border is set to hug the
+  # cleared area (see clear above) plus this margin, so players can't
+  # wander out of the lobby into the rest of the world — it's meant
+  # purely as a jumping-off point to other worlds.
+  border-margin: 8
+
 # Labels shown on the standing signs CampusLobby places near each
 # landmark. Purely cosmetic signage — CampusLobby does not handle
 # clicks or teleportation itself. Pair these labels with matching

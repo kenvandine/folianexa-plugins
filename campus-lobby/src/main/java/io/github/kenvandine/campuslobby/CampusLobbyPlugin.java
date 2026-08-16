@@ -11,9 +11,17 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public final class CampusLobbyPlugin extends JavaPlugin {
 
+    private volatile String lobbyWorldName;
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
+
+        LobbyState state = new LobbyStateStore(this).load();
+        if (state != null) {
+            lobbyWorldName = state.world();
+        }
+
         getServer().getPluginManager().registerEvents(new CampusLobbyListener(this), this);
         getCommand("campuslobby").setExecutor(new CampusLobbyCommand(this));
     }
@@ -24,5 +32,18 @@ public final class CampusLobbyPlugin extends JavaPlugin {
         // (Bukkit.getRegionScheduler()/getGlobalRegionScheduler()/
         // getAsyncScheduler()) automatically on plugin disable — nothing
         // else to clean up here.
+    }
+
+    /**
+     * The world the lobby scene was most recently built in, or {@code
+     * null} if {@code /campuslobby build} hasn't run yet. CampusLobbyListener
+     * restricts building/damage in this world to campuslobby.admin holders.
+     */
+    String getLobbyWorldName() {
+        return lobbyWorldName;
+    }
+
+    void setLobbyWorldName(String lobbyWorldName) {
+        this.lobbyWorldName = lobbyWorldName;
     }
 }

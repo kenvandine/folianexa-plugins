@@ -14,7 +14,9 @@ public record SceneConfig(
         int towerHeight,
         Include include,
         Colors colors,
-        Map<String, String> signLabels
+        Map<String, String> signLabels,
+        Clear clear,
+        int borderMargin
 ) {
 
     public record Include(
@@ -37,6 +39,15 @@ public record SceneConfig(
     ) {
     }
 
+    /**
+     * Controls the pre-build area clear that removes leftover terrain
+     * (rogue trees, hills, etc.) before the scene is placed. The clear
+     * only ever goes from the plaza floor upward — it never digs below
+     * the floor.
+     */
+    public record Clear(int padding, int heightAbove) {
+    }
+
     /** Matches the shipped config.yml defaults exactly. */
     public static SceneConfig defaults() {
         return new SceneConfig(
@@ -52,7 +63,9 @@ public record SceneConfig(
                         "WHITE_STAINED_GLASS_PANE",
                         "BLACKSTONE"
                 ),
-                Map.of()
+                Map.of(),
+                new Clear(10, 16),
+                8
         );
     }
 }
