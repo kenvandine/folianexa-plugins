@@ -44,7 +44,21 @@ final class HttpMgmtClient {
     HttpMgmtClient(String baseUrl, String apiToken, Logger logger) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.apiToken = apiToken;
-        this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+        // HTTP_1_1 explicitly: java.net.http.HttpClient defaults to
+        // preferring HTTP/2, which over plaintext means attempting an
+        // "Upgrade: h2c" handshake (RFC 7540 §3.2) on every request.
+        // folia-nexa-mgmt is a plain uvicorn/h11 server — HTTP/1.1 only,
+        // no h2c support — and the mismatch didn't just fail cleanly; it
+        // intermittently corrupted request framing on this client's
+        // reused connection, confirmed live: alternating "422 Field
+        // required, input: null" (mgmt received an empty body) and a
+        // bare "400 Invalid HTTP request received" from uvicorn itself,
+        // never a clean, consistent failure. Pinning HTTP/1.1 here skips
+        // the upgrade attempt entirely.
+        this.httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
         this.logger = logger;
     }
 
