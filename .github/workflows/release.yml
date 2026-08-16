@@ -80,7 +80,12 @@ jobs:
 
       - name: Build and test
         working-directory: ${{ steps.vars.outputs.plugin }}
-        run: ./gradlew build
+        # -PreleaseVersion is only meaningful to plugins whose
+        # build.gradle.kts reads it (see campus-lobby's for the
+        # pattern — it stamps this into both the jar's own version and
+        # plugin.yml, so a release always self-reports the version it
+        # was tagged with); harmless no-op for any plugin that doesn't.
+        run: ./gradlew build -PreleaseVersion=${{ steps.vars.outputs.version }}
 
       - name: Locate the built jar
         id: jar
