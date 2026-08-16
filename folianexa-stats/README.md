@@ -27,7 +27,12 @@ Requires Java 21.
 
 ```bash
 ./gradlew build
-# build/libs/folianexa-stats-0.1.0.jar
+# build/libs/folianexa-stats-0.1.0.jar — 0.1.0 is this checkout's local
+# default. A real release build passes -PreleaseVersion=<version> (see
+# .github/workflows/release.yml), which becomes both the jar's own
+# version and plugin.yml's version: field, so
+# build/libs/folianexa-stats-<version>.jar always matches the release
+# tag it was published under.
 ```
 
 ## Installing (for local testing)

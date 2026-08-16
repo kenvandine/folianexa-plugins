@@ -1,5 +1,5 @@
 name: FoliaNexaStats
-version: '0.1.0'
+version: '${version}'
 main: io.github.kenvandine.folianexastats.FoliaNexaStatsPlugin
 api-version: '1.21'
 softdepend: [AuraSkills, Vault]

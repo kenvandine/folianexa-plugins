@@ -26,3 +26,30 @@ directory (see `campus-lobby/` for the shape: `build.gradle.kts`,
 release (tag + build + attach the jar to a GitHub Release) once it's
 ready, then open a PR against `FoliaNexa` adding/updating its
 `catalog.yaml` entry with the real `download_url` and `sha256`.
+
+### Versioning convention
+
+Every plugin's `build.gradle.kts` should read its version like this
+(see `campus-lobby/build.gradle.kts` or `folianexa-stats/build.gradle.kts`
+for the working copy):
+
+```kotlin
+version = (findProperty("releaseVersion") as String?) ?: "0.1.0"
+
+tasks.processResources {
+    filesMatching("plugin.yml") {
+        expand("version" to project.version.toString())
+    }
+}
+```
+
+with `plugin.yml`'s own `version:` field set to the literal placeholder
+`'${version}'` rather than a hardcoded string. `.github/workflows/release.yml`
+passes `-PreleaseVersion=<the tag's version>` to every release build, so
+the resulting jar's filename and its `plugin.yml` both self-report the
+exact version they were released under — no hand-editing a version
+number before tagging, and no risk of it drifting out of sync (which is
+exactly what happened before this convention existed: campus-lobby
+shipped three releases, `v0.0.1`–`v0.0.3`, all internally reporting
+`0.1.0`). Plain local `./gradlew build` with no property set still falls
+back to the hardcoded default, so day-to-day local builds are unaffected.

@@ -18,7 +18,11 @@ plugins {
 }
 
 group = "io.github.kenvandine.folianexastats"
-version = "0.1.0"
+// The release workflow (.github/workflows/release.yml) passes
+// -PreleaseVersion=<tag's version> so a release's jar/plugin.yml
+// version always matches the release tag it's published under. Plain
+// local `./gradlew build` (no property set) falls back to this default.
+version = (findProperty("releaseVersion") as String?) ?: "0.1.0"
 
 java {
     toolchain {
@@ -59,6 +63,16 @@ tasks.test {
 
 tasks.shadowJar {
     archiveClassifier.set("") // the fat jar IS the plugin jar
+}
+
+tasks.processResources {
+    // Stamps plugin.yml's version: '${version}' placeholder with this
+    // build's actual project.version, so it's never hand-edited out of
+    // sync with the jar's own version (see the `version = ...` comment
+    // above).
+    filesMatching("plugin.yml") {
+        expand("version" to project.version.toString())
+    }
 }
 
 tasks.build {
