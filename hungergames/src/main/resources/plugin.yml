@@ -1,0 +1,20 @@
+name: HungerGames
+version: '0.1.0'
+main: io.github.kenvandine.hungergames.HungerGamesPlugin
+api-version: '1.21'
+folia-supported: true
+load: POSTWORLD
+
+commands:
+  hungergames:
+    description: Join, leave, or manage Hunger Games matches.
+    usage: /hungergames <join|leave|list|twists|forcestart|stop|reload> [arena]
+    aliases: [hg]
+
+permissions:
+  hungergames.join:
+    description: Join a Hunger Games arena queue.
+    default: true
+  hungergames.admin:
+    description: Force-start, stop, or reload Hunger Games matches/config.
+    default: op
