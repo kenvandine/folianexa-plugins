@@ -35,8 +35,17 @@ public record SceneConfig(
             String brick,
             String brickTrim,
             String glass,
-            String roof
+            String roof,
+            String clayRed,
+            String clayWhite,
+            String clayBlack,
+            String clayGray,
+            String clayNormal
     ) {
+        public Colors(String primaryRed, String white, String black, String brick, String brickTrim, String glass, String roof) {
+            this(primaryRed, white, black, brick, brickTrim, glass, roof,
+                    "RED_TERRACOTTA", "WHITE_TERRACOTTA", "BLACK_TERRACOTTA", "GRAY_TERRACOTTA", "TERRACOTTA");
+        }
     }
 
     /**
@@ -51,21 +60,26 @@ public record SceneConfig(
     /** Matches the shipped config.yml defaults exactly. */
     public static SceneConfig defaults() {
         return new SceneConfig(
-                24,
-                34,
+                48,
+                54,
                 new Include(true, true, true, true, true),
                 new Colors(
                         "RED_CONCRETE",
                         "WHITE_CONCRETE",
                         "BLACK_CONCRETE",
-                        "BRICKS",
-                        "CHISELED_BRICKS",
+                        "RED_TERRACOTTA",
+                        "TERRACOTTA",
                         "WHITE_STAINED_GLASS_PANE",
-                        "BLACKSTONE"
+                        "POLISHED_BLACKSTONE",
+                        "RED_TERRACOTTA",
+                        "WHITE_TERRACOTTA",
+                        "BLACK_TERRACOTTA",
+                        "GRAY_TERRACOTTA",
+                        "TERRACOTTA"
                 ),
                 Map.of(),
-                new Clear(10, 16),
-                8
+                new Clear(12, 18),
+                10
         );
     }
 }

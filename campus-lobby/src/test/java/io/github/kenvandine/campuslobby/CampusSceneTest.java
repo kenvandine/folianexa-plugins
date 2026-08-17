@@ -97,18 +97,33 @@ class CampusSceneTest {
         SceneConfig cfg = SceneConfig.defaults();
         CampusScene.Scene scene = CampusScene.generate(cfg);
 
-        Set<String> wolfpackColors = Set.of(
-                cfg.colors().primaryRed(), cfg.colors().white(), cfg.colors().black(),
-                cfg.colors().brick(), cfg.colors().brickTrim(), cfg.colors().glass(), cfg.colors().roof(),
-                "RED_BANNER", "WHITE_BANNER"
-        );
+        Set<String> wolfpackColors = new HashSet<>();
+        wolfpackColors.add(cfg.colors().primaryRed());
+        wolfpackColors.add(cfg.colors().white());
+        wolfpackColors.add(cfg.colors().black());
+        wolfpackColors.add(cfg.colors().brick());
+        wolfpackColors.add(cfg.colors().brickTrim());
+        wolfpackColors.add(cfg.colors().glass());
+        wolfpackColors.add(cfg.colors().roof());
+        wolfpackColors.add(cfg.colors().clayRed());
+        wolfpackColors.add(cfg.colors().clayWhite());
+        wolfpackColors.add(cfg.colors().clayBlack());
+        wolfpackColors.add(cfg.colors().clayGray());
+        wolfpackColors.add(cfg.colors().clayNormal());
+        wolfpackColors.addAll(List.of(
+                "RED_BANNER", "WHITE_BANNER", "POLISHED_BLACKSTONE", "POLISHED_BLACKSTONE_WALL",
+                "POLISHED_BLACKSTONE_SLAB", "SMOOTH_STONE", "SMOOTH_STONE_SLAB", "LANTERN",
+                "SEA_LANTERN", "RED_STAINED_GLASS", "RED_STAINED_GLASS_PANE", "IRON_BARS",
+                "MOSS_BLOCK", "AZALEA_LEAVES", "RED_TULIP", "WHITE_TULIP", "CHAIN", "BELL",
+                "LIGHTNING_ROD", "BOOKSHELF", "AIR"
+        ));
 
         long total = scene.blocks().size();
         long wolfpack = scene.blocks().stream().filter(b -> wolfpackColors.contains(b.material())).count();
 
         assertTrue(total > 0);
         assertTrue(wolfpack * 100.0 / total > 90.0,
-                "expected the Wolfpack/brick palette to dominate, got " + wolfpack + "/" + total);
+                "expected the Wolfpack/clay palette to dominate, got " + wolfpack + "/" + total);
     }
 
     @Test
@@ -168,5 +183,46 @@ class CampusSceneTest {
                 .filter(b -> Math.abs(b.dx()) > 60 || Math.abs(b.dz()) > 60)
                 .toList();
         assertTrue(outOfBounds.isEmpty(), "no landmark should sprawl unreasonably far past the plaza: " + outOfBounds.size());
+    }
+
+    @Test
+    void terracottaAndClayBlocksAreDominantInTheScene() {
+        CampusScene.Scene scene = CampusScene.generate(SceneConfig.defaults());
+
+        Set<String> clayMaterials = Set.of(
+                "RED_TERRACOTTA", "WHITE_TERRACOTTA", "BLACK_TERRACOTTA",
+                "GRAY_TERRACOTTA", "TERRACOTTA"
+        );
+
+        long clayBlockCount = scene.blocks().stream()
+                .filter(b -> clayMaterials.contains(b.material()))
+                .count();
+
+        assertTrue(clayBlockCount > 5000, "expected abundant terracotta/clay blocks throughout the scene, got: " + clayBlockCount);
+    }
+
+    @Test
+    void plazaSpansEnlargedRadius() {
+        SceneConfig cfg = SceneConfig.defaults();
+        CampusScene.Scene scene = CampusScene.generate(cfg);
+
+        CampusScene.Bounds bounds = scene.bounds();
+        assertTrue(bounds.minX() <= -cfg.plazaRadius());
+        assertTrue(bounds.maxX() >= cfg.plazaRadius());
+        assertTrue(bounds.minZ() <= -cfg.plazaRadius());
+        assertTrue(bounds.maxZ() >= cfg.plazaRadius());
+    }
+
+    @Test
+    void belltowerIncludesBellAndMemorialBeacon() {
+        CampusScene.Scene scene = CampusScene.generate(SceneConfig.defaults());
+
+        boolean hasBell = scene.blocks().stream().anyMatch(b -> "BELL".equals(b.material()));
+        boolean hasRedStainedGlass = scene.blocks().stream().anyMatch(b -> "RED_STAINED_GLASS".equals(b.material()));
+        boolean hasLantern = scene.blocks().stream().anyMatch(b -> "LANTERN".equals(b.material()));
+
+        assertTrue(hasBell, "Belltower belfry should include a bell");
+        assertTrue(hasRedStainedGlass, "Belltower should include red stained glass victory lighting");
+        assertTrue(hasLantern, "Belltower / plaza should include lanterns");
     }
 }

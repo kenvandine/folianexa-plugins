@@ -6,10 +6,11 @@
 scene:
   # Plaza (the "Brickyard") half-width in blocks. The plaza is a square
   # centered on the build origin, (2 * plaza-radius + 1) blocks per side.
-  plaza-radius: 24
+  # 48 gives a grand ~97x97 campus square (2x the original size).
+  plaza-radius: 48
 
   # Belltower height in blocks, measured from the plaza surface.
-  tower-height: 34
+  tower-height: 54
 
   # Which landmarks to place. All default on; turn any off to keep the
   # scene smaller/faster to place.
@@ -20,16 +21,21 @@ scene:
     union-facade: true
     library-facade: true
 
-  # Wolfpack color palette. Values are org.bukkit.Material names — swap
-  # any of these (e.g. to wool instead of concrete) to taste.
+  # Wolfpack color & colored clay palette. Values are org.bukkit.Material
+  # names — styled with NC State red/white/black and rich terracotta/colored clay.
   colors:
     primary-red: RED_CONCRETE
     white: WHITE_CONCRETE
     black: BLACK_CONCRETE
-    brick: BRICKS
-    brick-trim: CHISELED_BRICKS
+    brick: RED_TERRACOTTA
+    brick-trim: TERRACOTTA
     glass: WHITE_STAINED_GLASS_PANE
-    roof: BLACKSTONE
+    roof: POLISHED_BLACKSTONE
+    clay-red: RED_TERRACOTTA
+    clay-white: WHITE_TERRACOTTA
+    clay-black: BLACK_TERRACOTTA
+    clay-gray: GRAY_TERRACOTTA
+    clay-normal: TERRACOTTA
 
   # Clears leftover terrain (rogue trees, hills, floating debris, etc.)
   # from the build area before placing the scene. The clear always
@@ -38,17 +44,17 @@ scene:
   clear:
     # Horizontal margin (blocks) cleared beyond the generated scene's
     # own footprint.
-    padding: 10
+    padding: 12
     # Vertical margin (blocks) cleared above the tallest generated
     # feature (the Belltower spire, by default).
-    height-above: 16
+    height-above: 18
 
   # Extra margin (blocks) beyond the cleared area before the world
   # border kicks in. The lobby world's border is set to hug the
   # cleared area (see clear above) plus this margin, so players can't
   # wander out of the lobby into the rest of the world — it's meant
   # purely as a jumping-off point to other worlds.
-  border-margin: 8
+  border-margin: 10
 
 # Labels shown on the standing signs CampusLobby places near each
 # landmark. Purely cosmetic signage — CampusLobby does not handle
@@ -62,3 +68,4 @@ signs:
   tunnel: "Free Expression Tunnel"
   union-facade: "Talley Student Union"
   library-facade: "D. H. Hill Jr. Library"
+

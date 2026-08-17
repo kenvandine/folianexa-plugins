@@ -26,14 +26,20 @@ final class ConfigLoader {
                 config.getBoolean("scene.include.library-facade", true)
         );
 
+        SceneConfig.Colors defaultColors = defaults.colors();
         SceneConfig.Colors colors = new SceneConfig.Colors(
-                config.getString("scene.colors.primary-red", defaults.colors().primaryRed()),
-                config.getString("scene.colors.white", defaults.colors().white()),
-                config.getString("scene.colors.black", defaults.colors().black()),
-                config.getString("scene.colors.brick", defaults.colors().brick()),
-                config.getString("scene.colors.brick-trim", defaults.colors().brickTrim()),
-                config.getString("scene.colors.glass", defaults.colors().glass()),
-                config.getString("scene.colors.roof", defaults.colors().roof())
+                config.getString("scene.colors.primary-red", defaultColors.primaryRed()),
+                config.getString("scene.colors.white", defaultColors.white()),
+                config.getString("scene.colors.black", defaultColors.black()),
+                config.getString("scene.colors.brick", defaultColors.brick()),
+                config.getString("scene.colors.brick-trim", defaultColors.brickTrim()),
+                config.getString("scene.colors.glass", defaultColors.glass()),
+                config.getString("scene.colors.roof", defaultColors.roof()),
+                config.getString("scene.colors.clay-red", defaultColors.clayRed()),
+                config.getString("scene.colors.clay-white", defaultColors.clayWhite()),
+                config.getString("scene.colors.clay-black", defaultColors.clayBlack()),
+                config.getString("scene.colors.clay-gray", defaultColors.clayGray()),
+                config.getString("scene.colors.clay-normal", defaultColors.clayNormal())
         );
 
         Map<String, String> signLabels = new LinkedHashMap<>();
