@@ -22,7 +22,7 @@ scene:
     library-facade: true
     enclosure: true
 
-  # Wolfpack color palette. Styled with pure vibrant concrete in NC State
+  # Wolfpack color palette. Styled with pure vibrant dyed concrete in NC State
   # Red, White, and Black for maximum contrast and bold spirit.
   colors:
     primary-red: RED_CONCRETE
@@ -30,8 +30,8 @@ scene:
     black: BLACK_CONCRETE
     brick: RED_CONCRETE
     brick-trim: BLACK_CONCRETE
-    glass: WHITE_STAINED_GLASS_PANE
-    roof: POLISHED_BLACKSTONE
+    glass: BLACK_CONCRETE
+    roof: BLACK_CONCRETE
     concrete-red: RED_CONCRETE
     concrete-white: WHITE_CONCRETE
     concrete-black: BLACK_CONCRETE

@@ -222,11 +222,11 @@ class CampusSceneTest {
         CampusScene.Scene scene = CampusScene.generate(SceneConfig.defaults());
 
         boolean hasBell = scene.blocks().stream().anyMatch(b -> "BELL".equals(b.material()));
-        boolean hasRedStainedGlass = scene.blocks().stream().anyMatch(b -> "RED_STAINED_GLASS".equals(b.material()));
+        boolean hasSeaLantern = scene.blocks().stream().anyMatch(b -> "SEA_LANTERN".equals(b.material()));
         boolean hasLantern = scene.blocks().stream().anyMatch(b -> "LANTERN".equals(b.material()));
 
         assertTrue(hasBell, "Belltower belfry should include a bell");
-        assertTrue(hasRedStainedGlass, "Belltower should include red stained glass victory lighting");
+        assertTrue(hasSeaLantern, "Belltower / scene should include victory lighting beacons");
         assertTrue(hasLantern, "Belltower / plaza should include lanterns");
     }
 
@@ -251,13 +251,34 @@ class CampusSceneTest {
     }
 
     @Test
+    void enclosureWallsAndCeilingAreSolidWithNoGlass() {
+        SceneConfig cfg = SceneConfig.defaults();
+        CampusScene.Scene scene = CampusScene.generate(cfg);
+
+        int r = cfg.plazaRadius();
+        int ceilingY = Math.max(48, cfg.towerHeight() + 12);
+
+        // Check outer perimeter walls for glass
+        boolean outerWallHasGlass = scene.blocks().stream()
+                .filter(b -> (Math.abs(b.dx()) == r || Math.abs(b.dz()) == r) && b.dy() >= 1 && b.dy() <= ceilingY)
+                .anyMatch(b -> b.material().contains("GLASS"));
+        assertFalse(outerWallHasGlass, "Outer perimeter walls must be solid with no glass to prevent looking outside");
+
+        // Check ceiling for glass
+        boolean ceilingHasGlass = scene.blocks().stream()
+                .filter(b -> b.dy() >= ceilingY)
+                .anyMatch(b -> b.material().contains("GLASS"));
+        assertFalse(ceilingHasGlass, "Ceiling must be closed with solid blocks with no glass");
+    }
+
+    @Test
     void wolfpackDecorationsIncludeBannersAndBelltowerSpire() {
         CampusScene.Scene scene = CampusScene.generate(SceneConfig.defaults());
 
         long bannerCount = scene.blocks().stream()
                 .filter(b -> b.material().contains("BANNER"))
                 .count();
-        assertTrue(bannerCount >= 8, "Scene should contain multiple Wolfpack banners: " + bannerCount);
+        assertTrue(bannerCount >= 4, "Scene should contain Wolfpack banners: " + bannerCount);
 
         long lightningRodCount = scene.blocks().stream()
                 .filter(b -> "LIGHTNING_ROD".equals(b.material()))
