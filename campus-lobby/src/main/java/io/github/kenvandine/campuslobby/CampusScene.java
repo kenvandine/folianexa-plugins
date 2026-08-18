@@ -42,6 +42,9 @@ public final class CampusScene {
         if (cfg.include().tunnel()) {
             buildTunnel(canvas, cfg);
         }
+        if (cfg.include().portals()) {
+            buildNetherPortals(canvas, cfg);
+        }
         if (cfg.include().unionFacade()) {
             buildUnionFacade(canvas, cfg);
         }
@@ -51,59 +54,59 @@ public final class CampusScene {
         return canvas.toScene();
     }
 
-    // -- Enclosure: 4 Solid Concrete Decorated Walls & Grand Ceiling ----
+    // -- Enclosure: 4 Solid Concrete Decorated Walls & Stepped Vaulted Ceiling --
 
     private static void buildEnclosure(Canvas canvas, SceneConfig cfg) {
         int r = cfg.plazaRadius();
         int height = cfg.towerHeight();
         SceneConfig.Colors c = cfg.colors();
 
-        int ceilingY = Math.max(48, height + 12);
+        int wallHeight = 26;
 
         // 1. Four 100% Solid Closed Boundary Walls (North, South, East, West) — No Glass to outside!
-        for (int y = 1; y <= ceilingY; y++) {
+        for (int y = 1; y <= wallHeight; y++) {
             for (int x = -r; x <= r; x++) {
                 // North and South base walls
-                canvas.set(x, y, -r, getBaseWallPattern(x, y, ceilingY, c));
-                canvas.set(x, y, r, getBaseWallPattern(x, y, ceilingY, c));
+                canvas.set(x, y, -r, getBaseWallPattern(x, y, wallHeight, c));
+                canvas.set(x, y, r, getBaseWallPattern(x, y, wallHeight, c));
             }
             for (int z = -r; z <= r; z++) {
                 // East and West base walls
-                canvas.set(-r, y, z, getBaseWallPattern(z, y, ceilingY, c));
-                canvas.set(r, y, z, getBaseWallPattern(z, y, ceilingY, c));
+                canvas.set(-r, y, z, getBaseWallPattern(z, y, wallHeight, c));
+                canvas.set(r, y, z, getBaseWallPattern(z, y, wallHeight, c));
             }
         }
 
         // 2. High-Detail Wolfpack Pixel Art & Murals on Walls
-        // North Wall (z = -r): Giant Howling Wolf Mascot & "NC STATE" Pixel Art
-        drawNorthWallPixelArt(canvas, -r, ceilingY, c);
+        // North Wall (z = -r, looking North): Left-to-Right is +x increasing
+        drawNorthWallPixelArt(canvas, -r, wallHeight, c);
 
-        // South Wall (z = +r): Giant "WOLFPACK" Banner & Block S / Wolf Claws Pixel Art
-        drawSouthWallPixelArt(canvas, r, ceilingY, c);
+        // South Wall (z = +r, looking South): Left-to-Right is -x decreasing (fixes backward text!)
+        drawSouthWallPixelArt(canvas, r, wallHeight, c);
 
-        // East Wall (x = +r): Founding Year "1887" & Twin Howling Wolves Pixel Art
-        drawEastWallPixelArt(canvas, r, ceilingY, c);
+        // East Wall (x = +r, looking East): Left-to-Right is +z increasing
+        drawEastWallPixelArt(canvas, r, wallHeight, c);
 
-        // West Wall (x = -r): "GO PACK" Banner & Howling Wolf Silhouette under Moon
-        drawWestWallPixelArt(canvas, -r, ceilingY, c);
+        // West Wall (x = -r, looking West): Left-to-Right is -z decreasing (fixes backward text!)
+        drawWestWallPixelArt(canvas, -r, wallHeight, c);
 
-        // 3. Grand Geometric Coffered Concrete Ceiling (100% Solid, NO Glass)
-        buildGeometricCeiling(canvas, r, ceilingY, c);
+        // 3. Grand Non-Cube Stepped Vaulted Concrete Ceiling (100% Solid, NO Glass)
+        buildGeometricVaultedCeiling(canvas, r, height, c);
     }
 
     private static String getBaseWallPattern(int coord, int y, int maxY, SceneConfig.Colors c) {
-        // Baseboard (y = 1 to 4)
+        // Baseboard (y = 1 to 3)
         if (y <= 2) return c.concreteBlack();
         if (y == 3) return c.primaryRed();
         if (y == 4) return c.concreteWhite();
 
         // Upper Cornice & Frieze (y = maxY - 3 to maxY)
-        if (y == maxY - 3) return c.concreteWhite();
-        if (y == maxY - 2) return c.primaryRed();
-        if (y >= maxY - 1) return c.concreteBlack();
+        if (y == maxY - 2) return c.concreteWhite();
+        if (y == maxY - 1) return c.primaryRed();
+        if (y >= maxY) return c.concreteBlack();
 
-        // Pilasters every 6 blocks
-        if (Math.abs(coord) % 6 == 0) {
+        // Pilasters every 5 blocks
+        if (Math.abs(coord) % 5 == 0) {
             return (y % 4 == 0) ? c.primaryRed() : c.concreteBlack();
         }
 
@@ -115,50 +118,37 @@ public final class CampusScene {
     }
 
     private static void drawNorthWallPixelArt(Canvas canvas, int z, int maxY, SceneConfig.Colors c) {
-        // 1. "NC STATE" Pixel Art Banner (y = 8 to 14)
-        renderTextOnWall(canvas, "NC STATE", -20, 8, z, true, c.white(), c.primaryRed());
+        // 1. "NC STATE" Pixel Art Banner (y = 18 to 24, looking North -> left is -x, right is +x)
+        renderTextOnWall(canvas, "NC STATE", -18, 18, z, true, 1, c.white(), c.primaryRed());
 
-        // 2. Giant Howling Wolf Mascot Pixel Art Head (x = -10 to 10, y = 18 to 38)
-        int yStart = 18;
+        // 2. Howling Wolf Mascot Pixel Art Head (x = -7 to 7, y = 6 to 16)
+        int yStart = 6;
         int[] wolfMask = {
-                0b000000000000000000001, // 38
-                0b000000000000000000011, // 37
-                0b000000000000000000111, // 36 - Ear tip
-                0b000000000000000011111, // 35
-                0b000000000000001111111, // 34 - Head top
-                0b000000000000111111111, // 33
-                0b000000000011111111111, // 32 - Brow
-                0b000000001111111111111, // 31 - Raised snout
-                0b000000111111111111111, // 30 - Muzzle
-                0b000011111111111111110, // 29 - Nose & open howl
-                0b001111111111111111100, // 28 - Upper jaw
-                0b011111110000111111100, // 27 - Mouth opening
-                0b001111111111111111110, // 26 - Lower jaw
-                0b000111111111111111111, // 25 - Throat
-                0b000011111111111111111, // 24 - Neck
-                0b000001111111111111111, // 23 - Mane
-                0b000000111111111111111, // 22 - Chest ruff
-                0b000000011111111111111, // 21 - Broad chest
-                0b000000001111111111111, // 20
-                0b000000000111111111111, // 19
-                0b000000000011111111111  // 18
+                0b000000000000001, // 16 - Ear tip
+                0b000000000000111, // 15 - Ear
+                0b000000000011111, // 14 - Head top
+                0b000000001111111, // 13 - Brow
+                0b000000111111111, // 12 - Raised muzzle
+                0b000011111111110, // 11 - Open howling jaw
+                0b001111110011110, // 10 - Open mouth
+                0b000111111111111, // 9 - Throat & mane
+                0b000011111111111, // 8 - Neck
+                0b000001111111111, // 7 - Chest fur
+                0b000000111111111  // 6 - Base
         };
 
         for (int row = 0; row < wolfMask.length; row++) {
             int bits = wolfMask[row];
             int y = yStart + (wolfMask.length - 1 - row);
-            for (int col = 0; col < 21; col++) {
-                if (((bits >> (20 - col)) & 1) == 1) {
-                    int x = -10 + col;
-                    // Glowing red eye at row 6, col 14
-                    if (row == 6 && (col == 14 || col == 15)) {
-                        canvas.set(x, y, z, c.primaryRed());
-                    } else if (row >= 14 && col <= 9) {
-                        // White chest ruff fur
-                        canvas.set(x, y, z, c.white());
-                    } else if (row >= 18) {
-                        // Wolfpack red collar/base
-                        canvas.set(x, y, z, c.primaryRed());
+            for (int col = 0; col < 15; col++) {
+                if (((bits >> (14 - col)) & 1) == 1) {
+                    int x = -7 + col;
+                    if (row == 3 && (col == 10 || col == 11)) {
+                        canvas.set(x, y, z, c.primaryRed()); // Red glowing eye
+                    } else if (row >= 7 && col <= 7) {
+                        canvas.set(x, y, z, c.white()); // White fur ruff
+                    } else if (row >= 9) {
+                        canvas.set(x, y, z, c.primaryRed()); // Red collar
                     } else {
                         canvas.set(x, y, z, c.white());
                     }
@@ -168,71 +158,73 @@ public final class CampusScene {
     }
 
     private static void drawSouthWallPixelArt(Canvas canvas, int z, int maxY, SceneConfig.Colors c) {
-        // 1. "WOLFPACK" Pixel Art Banner (y = 30 to 36)
-        renderTextOnWall(canvas, "WOLFPACK", -24, 30, z, true, c.white(), c.primaryRed());
+        // 1. "WOLFPACK" Pixel Art Banner (y = 18 to 24, looking South -> left is +x, right is -x)
+        // Starts at x = 16 and advances in stepDir = -1 so it reads correctly left-to-right!
+        renderTextOnWall(canvas, "WOLFPACK", 16, 18, z, true, -1, c.white(), c.primaryRed());
 
-        // 2. Central Giant Block "S" with Red & White Shield (x = -8 to 8, y = 10 to 26)
-        canvas.fillBox(-8, 10, z, 8, 26, z, c.concreteBlack());
-        canvas.ring(-7, z, 7, z, 10, c.primaryRed());
-        canvas.ring(-7, z, 7, z, 26, c.primaryRed());
-        for (int y = 11; y <= 25; y++) {
-            canvas.set(-7, y, z, c.primaryRed());
-            canvas.set(7, y, z, c.primaryRed());
+        // 2. Central Block "S" Shield with Red & White Frame (x = -6 to 6, y = 6 to 16)
+        canvas.fillBox(-6, 6, z, 6, 16, z, c.concreteBlack());
+        canvas.ring(-5, z, 5, z, 6, c.primaryRed());
+        canvas.ring(-5, z, 5, z, 16, c.primaryRed());
+        for (int y = 7; y <= 15; y++) {
+            canvas.set(-5, y, z, c.primaryRed());
+            canvas.set(5, y, z, c.primaryRed());
         }
-        // Inlaid Block S in center of shield
-        for (int x = -4; x <= 4; x++) {
-            for (int dy = -4; dy <= 4; dy++) {
-                int y = 18 + dy;
-                if (isBlockS(x, dy)) {
-                    canvas.set(x + 1, y - 1, z, c.primaryRed()); // drop shadow
+        // Inlaid Block S (drawn with correct non-mirrored facing for observer looking South)
+        for (int x = -3; x <= 3; x++) {
+            for (int dy = -3; dy <= 3; dy++) {
+                int y = 11 + dy;
+                // When looking South (+z), observer's left is +x, right is -x.
+                // Standard 'S' has top opening on the right (-x) and bottom opening on the left (+x).
+                if (isBlockSViewedFromFront(x, dy)) {
+                    canvas.set(x - 1, y - 1, z, c.primaryRed());
                     canvas.set(x, y, z, c.white());
                 }
             }
         }
 
-        // 3. Symmetrical Wolf Claws flanking the shield (x = -16..-10 and x = 10..16)
-        drawClawMarks(canvas, -14, 14, z, true, c);
-        drawClawMarks(canvas, 14, 14, z, true, c);
+        // Symmetrical Wolf Claws flanking the shield (x = -13..-8 and x = 8..13)
+        drawClawMarks(canvas, -10, 8, z, true, c);
+        drawClawMarks(canvas, 10, 8, z, true, c);
     }
 
     private static void drawEastWallPixelArt(Canvas canvas, int x, int maxY, SceneConfig.Colors c) {
-        // 1. Founding Year "1887" Banner (y = 30 to 36)
-        renderTextOnWall(canvas, "1887", -12, 30, x, false, c.white(), c.primaryRed());
+        // 1. Founding Year "1887" Banner (y = 18 to 24, looking East -> left is -z, right is +z)
+        renderTextOnWall(canvas, "1887", -10, 18, x, false, 1, c.white(), c.primaryRed());
 
-        // 2. Symmetrical Twin Howling Wolves facing each other (y = 12 to 26)
-        // Left wolf (z = -14 to -4) facing toward z = 0
-        drawMiniWolf(canvas, x, 12, -9, false, c);
-        // Right wolf (z = 4 to 14) facing toward z = 0
-        drawMiniWolf(canvas, x, 12, 9, true, c);
+        // 2. Symmetrical Twin Howling Wolves facing each other (y = 6 to 16)
+        drawMiniWolf(canvas, x, 6, -6, false, c);
+        drawMiniWolf(canvas, x, 6, 6, true, c);
 
-        // Central Wolfpack Diamond Starburst at z = 0 (y = 14 to 24)
-        for (int dy = -5; dy <= 5; dy++) {
-            for (int dz = -5; dz <= 5; dz++) {
+        // Central Diamond Starburst at z = 0 (y = 8 to 14)
+        for (int dy = -3; dy <= 3; dy++) {
+            for (int dz = -3; dz <= 3; dz++) {
                 int dist = Math.abs(dy) + Math.abs(dz);
-                if (dist <= 4) {
-                    canvas.set(x, 19 + dy, dz, (dist <= 2) ? c.white() : c.primaryRed());
+                if (dist <= 3) {
+                    canvas.set(x, 11 + dy, dz, (dist <= 1) ? c.white() : c.primaryRed());
                 }
             }
         }
     }
 
     private static void drawWestWallPixelArt(Canvas canvas, int x, int maxY, SceneConfig.Colors c) {
-        // 1. "GO PACK" Banner (y = 30 to 36)
-        renderTextOnWall(canvas, "GO PACK", -20, 30, x, false, c.white(), c.primaryRed());
+        // 1. "GO PACK" Banner (y = 18 to 24, looking West -> left is +z, right is -z)
+        // Starts at z = 14 and advances in stepDir = -1 so it reads correctly left-to-right!
+        renderTextOnWall(canvas, "GO PACK", 14, 18, x, false, -1, c.white(), c.primaryRed());
 
-        // 2. Howling Wolf Silhouette under Crescent Moon (z = -12 to 12, y = 12 to 26)
-        // Crescent Moon in White Concrete (z = 4 to 10, y = 18 to 25)
-        for (int dy = -3; dy <= 3; dy++) {
-            for (int dz = -3; dz <= 3; dz++) {
+        // 2. Howling Wolf Silhouette under Crescent Moon (y = 6 to 16)
+        // Crescent Moon in White Concrete (z = -6 to -2, y = 11 to 16)
+        for (int dy = -2; dy <= 2; dy++) {
+            for (int dz = -2; dz <= 2; dz++) {
                 int dist = dy * dy + dz * dz;
-                if (dist <= 9 && (dz >= 0 || dy * dy + (dz + 2) * (dz + 2) > 9)) {
-                    canvas.set(x, 22 + dy, 7 + dz, c.white());
+                if (dist <= 5 && (dz <= 0 || dy * dy + (dz - 1) * (dz - 1) > 4)) {
+                    canvas.set(x, 13 + dy, -4 + dz, c.white());
                 }
             }
         }
 
-        // Howling Wolf on the left howling at the moon
-        drawMiniWolf(canvas, x, 12, -4, false, c);
+        // Howling Wolf howling towards the moon on the right (toward -z)
+        drawMiniWolf(canvas, x, 6, 4, true, c);
     }
 
     private static void drawMiniWolf(Canvas canvas, int fixedCoord, int yBase, int zCenter, boolean flip, SceneConfig.Colors c) {
@@ -261,7 +253,7 @@ public final class CampusScene {
 
     private static void drawClawMarks(Canvas canvas, int xCenter, int yBase, int zFixed, boolean isZFixed, SceneConfig.Colors c) {
         for (int claw = -2; claw <= 2; claw += 2) {
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 6; i++) {
                 int cx = xCenter + claw + (i / 2);
                 int cy = yBase + i;
                 int x = isZFixed ? cx : zFixed;
@@ -272,12 +264,12 @@ public final class CampusScene {
         }
     }
 
-    private static void renderTextOnWall(Canvas canvas, String text, int startCoord, int yBase, int fixedCoord, boolean isZFixed, String letterColor, String shadowColor) {
+    private static void renderTextOnWall(Canvas canvas, String text, int startCoord, int yBase, int fixedCoord, boolean isZFixed, int stepDir, String letterColor, String shadowColor) {
         int cur = startCoord;
         for (int i = 0; i < text.length(); i++) {
             char ch = text.charAt(i);
             if (ch == ' ') {
-                cur += 3;
+                cur += 3 * stepDir;
                 continue;
             }
             int[] rows = getCharBitmap(ch);
@@ -286,17 +278,17 @@ public final class CampusScene {
                 int y = yBase + (6 - r);
                 for (int col = 0; col < 5; col++) {
                     if (((rowBits >> (4 - col)) & 1) == 1) {
-                        int cCoord = cur + col;
+                        int cCoord = cur + col * stepDir;
                         int x = isZFixed ? cCoord : fixedCoord;
                         int z = isZFixed ? fixedCoord : cCoord;
-                        int sx = isZFixed ? cCoord + 1 : fixedCoord;
-                        int sz = isZFixed ? fixedCoord : cCoord + 1;
+                        int sx = isZFixed ? cCoord + stepDir : fixedCoord;
+                        int sz = isZFixed ? fixedCoord : cCoord + stepDir;
                         canvas.set(sx, y - 1, sz, shadowColor);
                         canvas.set(x, y, z, letterColor);
                     }
                 }
             }
-            cur += 6;
+            cur += 6 * stepDir;
         }
     }
 
@@ -330,60 +322,49 @@ public final class CampusScene {
         };
     }
 
-    private static void buildGeometricCeiling(Canvas canvas, int r, int ceilingY, SceneConfig.Colors c) {
-        // 100% Solid Full Blocks — NO Glass!
+    private static void buildGeometricVaultedCeiling(Canvas canvas, int r, int towerHeight, SceneConfig.Colors c) {
+        int baseCeilingY = 26;
+        int peakCeilingY = 32;
+
+        // 100% Solid Full Concrete Blocks — Organic Stepped Vaulted Gothic Dome!
         for (int x = -r; x <= r; x++) {
             for (int z = -r; z <= r; z++) {
+                int distFromWall = Math.min(r - Math.abs(x), r - Math.abs(z));
+                int vaultY = Math.min(peakCeilingY, baseCeilingY + (int) Math.round(distFromWall * 0.7));
+
+                boolean isCentralMedallion = (Math.abs(x) <= 6 && Math.abs(z) <= 6);
                 int dist = Math.abs(x) + Math.abs(z);
-                boolean isCentralMedallion = (Math.abs(x) <= 12 && Math.abs(z) <= 12);
 
                 if (isCentralMedallion) {
-                    if (dist <= 4) {
+                    if (dist <= 2) {
                         // Central Block S
-                        if (isBlockS(x, z)) {
-                            canvas.set(x, ceilingY, z, c.white());
-                        } else {
-                            canvas.set(x, ceilingY, z, c.primaryRed());
-                        }
-                    } else if (dist <= 8) {
-                        // Inner 8-pointed starburst
-                        boolean isStarPoint = (x == 0 || z == 0 || Math.abs(x) == Math.abs(z));
-                        canvas.set(x, ceilingY, z, isStarPoint ? c.white() : c.concreteBlack());
-                    } else if (dist <= 12) {
-                        // Outer medallion ring
-                        canvas.set(x, ceilingY, z, c.primaryRed());
+                        canvas.set(x, vaultY, z, isBlockS(x, z) ? c.white() : c.primaryRed());
+                    } else if (dist <= 5) {
+                        boolean isStar = (x == 0 || z == 0 || Math.abs(x) == Math.abs(z));
+                        canvas.set(x, vaultY, z, isStar ? c.white() : c.primaryRed());
                     } else {
-                        canvas.set(x, ceilingY, z, c.concreteBlack());
+                        canvas.set(x, vaultY, z, c.concreteBlack());
                     }
-                    // Flush embedded lighting in central medallion
-                    if ((Math.abs(x) == 6 && Math.abs(z) == 6) || (x == 0 && Math.abs(z) == 8) || (z == 0 && Math.abs(x) == 8)) {
-                        canvas.set(x, ceilingY, z, "SEA_LANTERN");
+                    if ((Math.abs(x) == 3 && Math.abs(z) == 3) || (x == 0 && Math.abs(z) == 4) || (z == 0 && Math.abs(x) == 4)) {
+                        canvas.set(x, vaultY, z, "SEA_LANTERN");
                     }
                 } else {
-                    // Coffered geometric bays
-                    boolean isRafter = (Math.abs(x) % 6 == 0) || (Math.abs(z) % 6 == 0);
-                    if (isRafter) {
-                        canvas.set(x, ceilingY, z, c.concreteBlack());
-                        if (Math.abs(x) % 6 == 0 && Math.abs(z) % 6 == 0) {
-                            canvas.set(x, ceilingY, z, "SEA_LANTERN"); // Flush ceiling lighting
+                    boolean isRib = (Math.abs(x) % 5 == 0) || (Math.abs(z) % 5 == 0) || (Math.abs(x) == Math.abs(z));
+                    if (isRib) {
+                        canvas.set(x, vaultY, z, c.concreteBlack());
+                        if (Math.abs(x) % 5 == 0 && Math.abs(z) % 5 == 0) {
+                            canvas.set(x, vaultY, z, "SEA_LANTERN");
                         }
                     } else {
-                        // Concentric diamond inside each 5x5 coffer bay
-                        int bx = Math.floorMod(x, 6) - 3;
-                        int bz = Math.floorMod(z, 6) - 3;
-                        int bDist = Math.abs(bx) + Math.abs(bz);
-                        if (bDist == 0) {
-                            canvas.set(x, ceilingY, z, c.concreteBlack());
-                        } else if (bDist == 1) {
-                            canvas.set(x, ceilingY, z, c.white());
-                        } else {
-                            canvas.set(x, ceilingY, z, c.primaryRed());
-                        }
+                        int pattern = (Math.abs(x) + Math.abs(z)) % 3;
+                        if (pattern == 0) canvas.set(x, vaultY, z, c.primaryRed());
+                        else if (pattern == 1) canvas.set(x, vaultY, z, c.white());
+                        else canvas.set(x, vaultY, z, c.concreteBlack());
                     }
                 }
 
-                // Solid ceiling backing cap (y = ceilingY + 1)
-                canvas.set(x, ceilingY + 1, z, c.concreteBlack());
+                // Solid ceiling backing cap (vaultY + 1)
+                canvas.set(x, vaultY + 1, z, c.concreteBlack());
             }
         }
     }
@@ -410,36 +391,31 @@ public final class CampusScene {
         canvas.ring(-(r - 3), -(r - 3), r - 3, r - 3, 0, c.concreteBlack());
 
         // Inlaid Wolfpack Paw Prints in all four plaza quadrants
-        placePawPrint(canvas, 16, 16, c);
-        placePawPrint(canvas, -16, 16, c);
-        placePawPrint(canvas, 16, -16, c);
-        placePawPrint(canvas, -16, -16, c);
-
-        placePawPrint(canvas, 22, 8, c);
-        placePawPrint(canvas, -22, 8, c);
-        placePawPrint(canvas, 22, -8, c);
-        placePawPrint(canvas, -22, -8, c);
+        placePawPrint(canvas, 10, 8, c);
+        placePawPrint(canvas, -10, 8, c);
+        placePawPrint(canvas, 10, -8, c);
+        placePawPrint(canvas, -10, -8, c);
 
         // Grand central NC State "Block S" / Wolfpack medallion
-        int medR = 8;
+        int medR = 5;
         for (int x = -medR; x <= medR; x++) {
             for (int z = -medR; z <= medR; z++) {
                 int dist = Math.abs(x) + Math.abs(z);
-                if (dist <= 10) {
+                if (dist <= 6) {
                     canvas.set(x, 0, z, c.primaryRed());
                 }
-                if (dist == 10 || (Math.abs(x) == medR && Math.abs(z) <= 2) || (Math.abs(z) == medR && Math.abs(x) <= 2)) {
+                if (dist == 6 || (Math.abs(x) == medR && Math.abs(z) <= 1) || (Math.abs(z) == medR && Math.abs(x) <= 1)) {
                     canvas.set(x, 0, z, c.concreteBlack());
                 }
-                if (dist == 9) {
+                if (dist == 5) {
                     canvas.set(x, 0, z, c.concreteWhite());
                 }
             }
         }
 
         // Block S inlay in the medallion (white with bold black shadow outline)
-        for (int x = -4; x <= 4; x++) {
-            for (int z = -6; z <= 5; z++) {
+        for (int x = -3; x <= 3; x++) {
+            for (int z = -4; z <= 4; z++) {
                 if (isBlockS(x, z)) {
                     for (int dx = -1; dx <= 1; dx++) {
                         for (int dz = -1; dz <= 1; dz++) {
@@ -451,8 +427,8 @@ public final class CampusScene {
                 }
             }
         }
-        for (int x = -4; x <= 4; x++) {
-            for (int z = -6; z <= 5; z++) {
+        for (int x = -3; x <= 3; x++) {
+            for (int z = -4; z <= 4; z++) {
                 if (isBlockS(x, z)) {
                     canvas.set(x, 0, z, c.white());
                 }
@@ -462,66 +438,43 @@ public final class CampusScene {
         // Grand Cardinal Pedestrian Promenades (+x East, -x West, +z South, -z North)
         int pLimit = r - 4;
         for (int x = -pLimit; x <= pLimit; x++) {
-            if (Math.abs(x) > medR - 2) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    canvas.set(x, 0, dz, c.concreteWhite());
-                }
-                canvas.set(x, 0, -2, c.concreteBlack());
-                canvas.set(x, 0, 2, c.concreteBlack());
-                canvas.set(x, 0, -3, c.primaryRed());
-                canvas.set(x, 0, 3, c.primaryRed());
+            if (Math.abs(x) > medR - 1) {
+                canvas.set(x, 0, 0, c.concreteWhite());
+                canvas.set(x, 0, -1, c.concreteBlack());
+                canvas.set(x, 0, 1, c.concreteBlack());
+                canvas.set(x, 0, -2, c.primaryRed());
+                canvas.set(x, 0, 2, c.primaryRed());
             }
         }
         for (int z = -pLimit; z <= pLimit; z++) {
-            if (Math.abs(z) > medR - 2) {
-                for (int dx = -1; dx <= 1; dx++) {
-                    canvas.set(dx, 0, z, c.concreteWhite());
-                }
-                canvas.set(-2, 0, z, c.concreteBlack());
-                canvas.set(2, 0, z, c.concreteBlack());
-                canvas.set(-3, 0, z, c.primaryRed());
-                canvas.set(3, 0, z, c.primaryRed());
+            if (Math.abs(z) > medR - 1) {
+                canvas.set(0, 0, z, c.concreteWhite());
+                canvas.set(-1, 0, z, c.concreteBlack());
+                canvas.set(1, 0, z, c.concreteBlack());
+                canvas.set(-2, 0, z, c.primaryRed());
+                canvas.set(2, 0, z, c.primaryRed());
             }
-        }
-
-        // Diagonal Walkways connecting center to corners
-        for (int d = medR; d <= pLimit - 2; d++) {
-            canvas.set(d, 0, d, c.concreteWhite());
-            canvas.set(-d, 0, d, c.concreteWhite());
-            canvas.set(d, 0, -d, c.concreteWhite());
-            canvas.set(-d, 0, -d, c.concreteWhite());
         }
 
         // 4 Wolfpack Spirit Fire Bowls / Victory Beacons around the medallion
-        placeSpiritBeacon(canvas, 7, 7, c);
-        placeSpiritBeacon(canvas, -7, 7, c);
-        placeSpiritBeacon(canvas, 7, -7, c);
-        placeSpiritBeacon(canvas, -7, -7, c);
+        placeSpiritBeacon(canvas, 5, 5, c);
+        placeSpiritBeacon(canvas, -5, 5, c);
+        placeSpiritBeacon(canvas, 5, -5, c);
+        placeSpiritBeacon(canvas, -5, -5, c);
 
         // Campus Lampposts along the grand avenues
-        int[] lampDistances = {12, 20, 26};
+        int[] lampDistances = {9, 15};
         for (int ld : lampDistances) {
-            if (ld < pLimit - 2) {
-                placeLamppost(canvas, ld, 4, c);
-                placeLamppost(canvas, ld, -4, c);
-                placeLamppost(canvas, -ld, 4, c);
-                placeLamppost(canvas, -ld, -4, c);
-                placeLamppost(canvas, 4, ld, c);
-                placeLamppost(canvas, -4, ld, c);
-                placeLamppost(canvas, 4, -ld, c);
-                placeLamppost(canvas, -4, -ld, c);
+            if (ld < pLimit) {
+                placeLamppost(canvas, ld, 3, c);
+                placeLamppost(canvas, ld, -3, c);
+                placeLamppost(canvas, -ld, 3, c);
+                placeLamppost(canvas, -ld, -3, c);
             }
         }
 
-        // Raised Campus Planters & Benches in the four quadrants
-        int planterD = 14;
-        placePlanter(canvas, planterD, planterD, c);
-        placePlanter(canvas, -planterD, planterD, c);
-        placePlanter(canvas, planterD, -planterD, c);
-        placePlanter(canvas, -planterD, -planterD, c);
-
         // Wolfpack Flagpoles at the 4 corners
-        int flagOffset = Math.max(6, r - 5);
+        int flagOffset = Math.max(6, r - 4);
         placeFlagpole(canvas, flagOffset, flagOffset, c.primaryRed(), true, c);
         placeFlagpole(canvas, -flagOffset, flagOffset, c.white(), false, c);
         placeFlagpole(canvas, flagOffset, -flagOffset, c.white(), false, c);
@@ -548,16 +501,34 @@ public final class CampusScene {
     }
 
     private static boolean isBlockS(int x, int z) {
-        if (z == -5 && x >= -3 && x <= 3) return true;
-        if (z == -4 && (x == -3 || x == -2)) return true;
-        if (z == -3 && (x == -3 || x == -2)) return true;
-        if (z == -2 && (x == -3 || x == -2)) return true;
-        if (z == -1 && x >= -3 && x <= 3) return true;
-        if (z == 0 && x >= -3 && x <= 3) return true;
-        if (z == 1 && (x == 2 || x == 3)) return true;
-        if (z == 2 && (x == 2 || x == 3)) return true;
-        if (z == 3 && (x == 2 || x == 3)) return true;
-        if (z == 4 && x >= -3 && x <= 3) return true;
+        if (z == -4 && x >= -2 && x <= 2) return true;
+        if (z == -3 && (x == -2 || x == -1)) return true;
+        if (z == -2 && (x == -2 || x == -1)) return true;
+        if (z == -1 && x >= -2 && x <= 2) return true;
+        if (z == 0 && x >= -2 && x <= 2) return true;
+        if (z == 1 && (x == 1 || x == 2)) return true;
+        if (z == 2 && (x == 1 || x == 2)) return true;
+        if (z == 3 && (x == 1 || x == 2)) return true;
+        if (z == 4 && x >= -2 && x <= 2) return true;
+        return false;
+    }
+
+    private static boolean isBlockSViewedFromFront(int x, int dy) {
+        // dy from +3 (top) to -3 (bottom)
+        // When facing South (+z), observer's left is +x, observer's right is -x.
+        // For an 'S' to look correct to the observer:
+        // Top stroke: full width
+        // Upper spine: on observer's left (+x)
+        // Middle stroke: full width
+        // Lower spine: on observer's right (-x)
+        // Bottom stroke: full width
+        if (dy == 3 && x >= -2 && x <= 2) return true;
+        if (dy == 2 && (x == 1 || x == 2)) return true;
+        if (dy == 1 && (x == 1 || x == 2)) return true;
+        if (dy == 0 && x >= -2 && x <= 2) return true;
+        if (dy == -1 && (x == -2 || x == -1)) return true;
+        if (dy == -2 && (x == -2 || x == -1)) return true;
+        if (dy == -3 && x >= -2 && x <= 2) return true;
         return false;
     }
 
@@ -569,27 +540,98 @@ public final class CampusScene {
         canvas.set(x, 5, z, c.primaryRed());
     }
 
-    private static void placePlanter(Canvas canvas, int cx, int cz, SceneConfig.Colors c) {
-        canvas.ring(cx - 2, cz - 2, cx + 2, cz + 2, 1, c.concreteBlack());
-        canvas.ring(cx - 2, cz - 2, cx + 2, cz + 2, 2, c.primaryRed());
-        canvas.fillBox(cx - 1, 1, cz - 1, cx + 1, 2, cz + 1, "MOSS_BLOCK");
-        canvas.set(cx, 3, cz, "AZALEA_LEAVES");
-        canvas.set(cx - 1, 3, cz, "RED_TULIP");
-        canvas.set(cx + 1, 3, cz, "WHITE_TULIP");
-        canvas.set(cx, 3, cz - 1, "RED_TULIP");
-        canvas.set(cx, 3, cz + 1, "WHITE_TULIP");
-
-        canvas.fillBox(cx - 1, 1, cz - 3, cx + 1, 1, cz - 3, c.concreteWhite());
-        canvas.fillBox(cx - 1, 1, cz + 3, cx + 1, 1, cz + 3, c.concreteWhite());
-    }
-
     private static void placeFlagpole(Canvas canvas, int x, int z, String wolfpackColor, boolean isRed, SceneConfig.Colors c) {
         String banner = isRed ? "RED_BANNER" : "WHITE_BANNER";
         canvas.set(x, 1, z, c.concreteBlack());
-        canvas.fillBox(x, 2, z, x, 6, z, "IRON_BARS");
-        canvas.set(x, 7, z, c.concreteBlack());
-        canvas.set(x, 6, z + 1, banner);
+        canvas.fillBox(x, 2, z, x, 5, z, "IRON_BARS");
+        canvas.set(x, 6, z, c.concreteBlack());
         canvas.set(x, 5, z + 1, banner);
+        canvas.set(x, 4, z + 1, banner);
+    }
+
+    // -- Three Fancy Nether Portals (Litematica-Inspired Shrine) ---------
+
+    private static void buildNetherPortals(Canvas canvas, SceneConfig cfg) {
+        int r = cfg.plazaRadius();
+        SceneConfig.Colors c = cfg.colors();
+
+        int pz = Math.min(13, r - 6); // south side of the plaza
+
+        // 1. Shared Grand Stepped Podium (y = 1) in Black & Red Concrete
+        canvas.fillBox(-9, 1, pz - 1, 9, 1, pz + 2, c.concreteBlack());
+        canvas.ring(-9, pz - 1, 9, pz + 2, 1, c.primaryRed());
+        canvas.fillBox(-8, 1, pz - 2, 8, 1, pz - 2, c.concreteWhite());
+
+        // 2. Left Portal (x = -8 to -4, center x = -6, y = 2 to 5)
+        buildPortalArch(canvas, -6, pz, 4, false, c);
+
+        // 3. Middle Portal (x = -2 to 2, center x = 0, y = 2 to 6, taller grand arch)
+        buildPortalArch(canvas, 0, pz, 5, true, c);
+
+        // 4. Right Portal (x = 4 to 8, center x = 6, y = 2 to 5)
+        buildPortalArch(canvas, 6, pz, 4, false, c);
+
+        // 5. Inter-Portal Gothic Buttress Columns (1-block gaps at x = -3 and x = 3)
+        for (int colX : new int[]{-3, 3}) {
+            canvas.fillBox(colX, 2, pz, colX, 6, pz, c.concreteBlack());
+            canvas.set(colX, 2, pz - 1, c.primaryRed());
+            canvas.set(colX, 4, pz - 1, c.concreteWhite());
+            canvas.set(colX, 6, pz - 1, c.primaryRed());
+            canvas.set(colX, 7, pz, c.concreteWhite());
+            canvas.set(colX, 8, pz, "LANTERN");
+        }
+
+        // 6. Standing Signs in front of each portal
+        canvas.sign(-6, 1, pz - 3, 0, "NC State Portal", label(cfg, "portal-left", "Resource Realm"));
+        canvas.sign(0, 1, pz - 3, 0, "NC State Portal", label(cfg, "portal-center", "Survival World"));
+        canvas.sign(6, 1, pz - 3, 0, "NC State Portal", label(cfg, "portal-right", "Minigames Hub"));
+    }
+
+    private static void buildPortalArch(Canvas canvas, int cx, int cz, int innerHeight, boolean isMainCenter, SceneConfig.Colors c) {
+        int halfW = 1; // 3 blocks wide portal opening: cx - 1 to cx + 1
+        int bottomY = 2;
+        int topY = bottomY + innerHeight - 1;
+
+        // Obsidian Portal Frame
+        canvas.fillBox(cx - halfW, bottomY - 1, cz, cx + halfW, bottomY - 1, cz, "OBSIDIAN");
+        canvas.fillBox(cx - halfW - 1, bottomY, cz, cx - halfW - 1, topY, cz, "OBSIDIAN");
+        canvas.fillBox(cx + halfW + 1, bottomY, cz, cx + halfW + 1, topY, cz, "OBSIDIAN");
+        canvas.fillBox(cx - halfW, topY + 1, cz, cx + halfW, topY + 1, cz, "OBSIDIAN");
+
+        // Nether Portal Blocks in the interior opening
+        for (int x = cx - halfW; x <= cx + halfW; x++) {
+            for (int y = bottomY; y <= topY; y++) {
+                canvas.set(x, y, cz, "NETHER_PORTAL");
+            }
+        }
+
+        // Crying Obsidian & Concrete Buttresses flanking the pillars
+        canvas.set(cx - halfW - 1, bottomY, cz - 1, "CRYING_OBSIDIAN");
+        canvas.set(cx + halfW + 1, bottomY, cz - 1, "CRYING_OBSIDIAN");
+        canvas.set(cx - halfW - 1, bottomY + 1, cz - 1, c.primaryRed());
+        canvas.set(cx + halfW + 1, bottomY + 1, cz - 1, c.primaryRed());
+        canvas.set(cx - halfW - 1, topY, cz - 1, c.concreteWhite());
+        canvas.set(cx + halfW + 1, topY, cz - 1, c.concreteWhite());
+
+        // Gothic Crown / Gable above portal
+        int gableY = topY + 2;
+        canvas.fillBox(cx - halfW - 1, gableY, cz, cx + halfW + 1, gableY, cz, c.concreteBlack());
+        canvas.fillBox(cx - halfW, gableY + 1, cz, cx + halfW, gableY + 1, cz, c.primaryRed());
+        canvas.set(cx, gableY + 2, cz, c.concreteWhite());
+
+        if (isMainCenter) {
+            // Grand central Wolfpack crest & victory beacon
+            canvas.set(cx, gableY + 1, cz - 1, c.white());
+            canvas.set(cx, gableY + 3, cz, "SEA_LANTERN");
+            canvas.set(cx, gableY + 4, cz, c.primaryRed());
+            canvas.set(cx, gableY + 5, cz, "LIGHTNING_ROD");
+        } else {
+            canvas.set(cx, gableY + 3, cz, c.primaryRed());
+        }
+
+        // Suspended Soul Lantern in front of arch
+        canvas.set(cx, topY + 1, cz - 1, "CHAIN");
+        canvas.set(cx, topY, cz - 1, "SOUL_LANTERN");
     }
 
     // -- Memorial Belltower ----------------------------------------------
@@ -599,23 +641,16 @@ public final class CampusScene {
         int height = cfg.towerHeight();
         SceneConfig.Colors c = cfg.colors();
 
-        int halfFoot = 3; // 7x7 shaft
-        int halfPodium = 5; // 11x11 base podium
-        int cz = -Math.max(halfPodium + 3, r - 10); // north of plaza center
+        int halfFoot = 2; // 5x5 shaft
+        int halfPodium = 3; // 7x7 base podium
+        int cz = -Math.max(halfPodium + 2, r - 9); // north of plaza center
 
-        // 1. Grand Stepped Podium (y = 1 to 3) in pure concrete
-        canvas.fillBox(-halfPodium - 1, 1, cz - halfPodium - 1, halfPodium + 1, 1, cz + halfPodium + 1, c.concreteBlack());
-        canvas.fillBox(-halfPodium, 2, cz - halfPodium, halfPodium, 2, cz + halfPodium, c.concreteWhite());
-        canvas.fillBox(-halfFoot - 1, 3, cz - halfFoot - 1, halfFoot + 1, 3, cz + halfFoot + 1, c.primaryRed());
+        // 1. Stepped Podium (y = 1 to 2) in pure concrete
+        canvas.fillBox(-halfPodium, 1, cz - halfPodium, halfPodium, 1, cz + halfPodium, c.concreteBlack());
+        canvas.fillBox(-halfFoot - 1, 2, cz - halfFoot - 1, halfFoot + 1, 2, cz + halfFoot + 1, c.primaryRed());
 
-        // Corner plinth pedestals
-        canvas.fillBox(-halfPodium, 2, cz - halfPodium, -halfPodium + 1, 3, cz - halfPodium + 1, c.concreteBlack());
-        canvas.fillBox(halfPodium - 1, 2, cz - halfPodium, halfPodium, 3, cz - halfPodium + 1, c.concreteBlack());
-        canvas.fillBox(-halfPodium, 2, cz + halfPodium - 1, -halfPodium + 1, 3, cz + halfPodium, c.concreteBlack());
-        canvas.fillBox(halfPodium - 1, 2, cz + halfPodium - 1, halfPodium, 3, cz + halfPodium, c.concreteBlack());
-
-        // 2. Ground Floor Memorial Shrine & Rotunda (y = 4 to 8)
-        for (int y = 4; y <= 8; y++) {
+        // 2. Ground Floor Memorial Shrine & Rotunda (y = 3 to 6)
+        for (int y = 3; y <= 6; y++) {
             canvas.ring(-halfFoot, cz - halfFoot, halfFoot, cz + halfFoot, y, c.concreteWhite());
             canvas.set(-halfFoot, y, cz - halfFoot, c.concreteBlack());
             canvas.set(halfFoot, y, cz - halfFoot, c.concreteBlack());
@@ -623,30 +658,20 @@ public final class CampusScene {
             canvas.set(halfFoot, y, cz + halfFoot, c.concreteBlack());
         }
 
-        // 4 Grand Archway entrances (South, North, East, West)
-        canvas.fillBox(-1, 4, cz + halfFoot, 1, 6, cz + halfFoot, "AIR");
-        canvas.set(0, 7, cz + halfFoot, "AIR");
-        canvas.fillBox(-1, 4, cz - halfFoot, 1, 6, cz - halfFoot, "AIR");
-        canvas.set(0, 7, cz - halfFoot, "AIR");
-        canvas.fillBox(halfFoot, 4, cz - 1, halfFoot, 6, cz + 1, "AIR");
-        canvas.set(halfFoot, 7, cz, "AIR");
-        canvas.fillBox(-halfFoot, 4, cz - 1, -halfFoot, 6, cz + 1, "AIR");
-        canvas.set(-halfFoot, 7, cz, "AIR");
-
-        // Memorial Shrine Interior (Floor mosaic + Glowing Red Light)
-        canvas.fillBox(-halfFoot + 1, 3, cz - halfFoot + 1, halfFoot - 1, 3, cz + halfFoot - 1, c.concreteBlack());
-        canvas.ring(-1, cz - 1, 1, cz + 1, 3, c.primaryRed());
-        canvas.set(0, 3, cz, c.concreteWhite());
+        // 4 Archway entrances
+        canvas.fillBox(-1, 3, cz + halfFoot, 1, 5, cz + halfFoot, "AIR");
+        canvas.fillBox(-1, 3, cz - halfFoot, 1, 5, cz - halfFoot, "AIR");
+        canvas.fillBox(halfFoot, 3, cz - 1, halfFoot, 5, cz + 1, "AIR");
+        canvas.fillBox(-halfFoot, 3, cz - 1, -halfFoot, 5, cz + 1, "AIR");
 
         // Central Memorial Pedestal with glowing Wolfpack beacon
-        canvas.set(0, 4, cz, c.concreteBlack());
-        canvas.set(0, 5, cz, "SEA_LANTERN");
-        canvas.set(0, 6, cz, c.primaryRed());
-        canvas.set(0, 8, cz, "LANTERN");
+        canvas.set(0, 3, cz, "SEA_LANTERN");
+        canvas.set(0, 4, cz, c.primaryRed());
+        canvas.set(0, 6, cz, "LANTERN");
 
-        // 3. Main Tower Shaft (y = 9 to height - 8)
-        int shaftTop = Math.max(10, height - 8);
-        for (int y = 9; y <= shaftTop; y++) {
+        // 3. Main Tower Shaft (y = 7 to height - 6)
+        int shaftTop = Math.max(8, height - 6);
+        for (int y = 7; y <= shaftTop; y++) {
             canvas.ring(-halfFoot, cz - halfFoot, halfFoot, cz + halfFoot, y, c.concreteWhite());
 
             canvas.set(-halfFoot, y, cz - halfFoot, c.concreteBlack());
@@ -660,15 +685,13 @@ public final class CampusScene {
             canvas.set(halfFoot, y, cz, c.primaryRed());
         }
 
-        // Architectural Belt Courses
-        int band1 = 9 + (shaftTop - 9) / 3;
-        int band2 = 9 + 2 * (shaftTop - 9) / 3;
-        canvas.ring(-halfFoot, cz - halfFoot, halfFoot, cz + halfFoot, band1, c.primaryRed());
-        canvas.ring(-halfFoot, cz - halfFoot, halfFoot, cz + halfFoot, band2, c.concreteBlack());
+        // Architectural Belt Course
+        int band = 7 + (shaftTop - 7) / 2;
+        canvas.ring(-halfFoot, cz - halfFoot, halfFoot, cz + halfFoot, band, c.primaryRed());
 
-        // 4. Belfry / Bell Chamber (y = height - 7 to height - 4)
-        int belfryBottom = height - 7;
-        int belfryTop = height - 4;
+        // 4. Belfry / Bell Chamber (y = height - 5 to height - 3)
+        int belfryBottom = height - 5;
+        int belfryTop = height - 3;
         canvas.fillBox(-halfFoot, belfryBottom, cz - halfFoot, halfFoot, belfryBottom, cz + halfFoot, c.concreteBlack());
         for (int y = belfryBottom + 1; y <= belfryTop; y++) {
             canvas.ring(-halfFoot, cz - halfFoot, halfFoot, cz + halfFoot, y, c.concreteWhite());
@@ -677,22 +700,15 @@ public final class CampusScene {
             canvas.set(-halfFoot, y, cz + halfFoot, c.concreteBlack());
             canvas.set(halfFoot, y, cz + halfFoot, c.concreteBlack());
         }
-        // Arched belfry openings
-        for (int y = belfryBottom + 1; y <= belfryTop - 1; y++) {
-            canvas.fillBox(-1, y, cz + halfFoot, 1, y, cz + halfFoot, "AIR");
-            canvas.fillBox(-1, y, cz - halfFoot, 1, y, cz - halfFoot, "AIR");
-            canvas.fillBox(halfFoot, y, cz - 1, halfFoot, y, cz + 1, "AIR");
-            canvas.fillBox(-halfFoot, y, cz - 1, -halfFoot, y, cz + 1, "AIR");
-        }
-        // Suspended Bell & Red Accent Lighting
+        // Suspended Bell
         canvas.set(0, belfryTop, cz, "CHAIN");
         canvas.set(0, belfryTop - 1, cz, "BELL");
         canvas.set(0, belfryBottom + 1, cz, c.primaryRed());
         canvas.set(0, belfryBottom, cz, "SEA_LANTERN");
 
-        // 5. Four-Sided Clock (y = height - 3 to height - 1)
+        // 5. Four-Sided Clock (y = height - 2 to height - 1)
         int clockY = height - 2;
-        for (int y = height - 3; y <= height - 1; y++) {
+        for (int y = height - 2; y <= height - 1; y++) {
             canvas.ring(-halfFoot, cz - halfFoot, halfFoot, cz + halfFoot, y, c.primaryRed());
         }
         buildClockFace(canvas, 0, clockY, cz + halfFoot, 1, 0, c);
@@ -700,45 +716,35 @@ public final class CampusScene {
         buildClockFace(canvas, halfFoot, clockY, cz, 0, 1, c);
         buildClockFace(canvas, -halfFoot, clockY, cz, 0, 1, c);
 
-        // 6. Cornice & Parapet (y = height to height + 2)
+        // 6. Cornice & Parapet (y = height)
         canvas.ring(-halfFoot - 1, cz - halfFoot - 1, halfFoot + 1, cz + halfFoot + 1, height, c.concreteBlack());
-        canvas.ring(-halfFoot, cz - halfFoot, halfFoot, cz + halfFoot, height + 1, c.concreteWhite());
 
         // Corner Pinnacles
         int[][] corners = {{-halfFoot, -halfFoot}, {halfFoot, -halfFoot}, {-halfFoot, halfFoot}, {halfFoot, halfFoot}};
         for (int[] corner : corners) {
             int cx = corner[0];
             int cdz = corner[1];
-            canvas.set(cx, height + 1, cz + cdz, c.concreteBlack());
-            canvas.set(cx, height + 2, cz + cdz, c.concreteWhite());
-            canvas.set(cx, height + 3, cz + cdz, "LIGHTNING_ROD");
+            canvas.set(cx, height + 1, cz + cdz, c.concreteWhite());
+            canvas.set(cx, height + 2, cz + cdz, "LIGHTNING_ROD");
         }
 
-        // 7. Stepped Pyramidal Roof & Glowing Red Spire (y = height + 1 to height + 7)
+        // 7. Stepped Pyramidal Roof & Glowing Red Spire (y = height + 1 to height + 5)
         int roofY = height + 1;
-        canvas.fillBox(-2, roofY, cz - 2, 2, roofY, cz + 2, c.concreteBlack());
-        canvas.fillBox(-1, roofY + 1, cz - 1, 1, roofY + 1, cz + 1, c.concreteBlack());
-        canvas.set(0, roofY + 2, cz, c.primaryRed());
-
-        // Victory Spire
-        canvas.set(0, roofY + 3, cz, "SEA_LANTERN");
-        canvas.set(0, roofY + 4, cz, c.primaryRed());
-        canvas.set(0, roofY + 5, cz, c.concreteBlack());
-        canvas.set(0, roofY + 6, cz, "LIGHTNING_ROD");
+        canvas.fillBox(-1, roofY, cz - 1, 1, roofY, cz + 1, c.concreteBlack());
+        canvas.set(0, roofY + 1, cz, c.primaryRed());
+        canvas.set(0, roofY + 2, cz, "SEA_LANTERN");
+        canvas.set(0, roofY + 3, cz, c.primaryRed());
+        canvas.set(0, roofY + 4, cz, "LIGHTNING_ROD");
 
         // Landmark Sign
-        canvas.sign(0, 2, cz + halfPodium + 2, 0, "NC State Wolfpack", label(cfg, "belltower", "Memorial Belltower"));
+        canvas.sign(0, 1, cz + halfPodium + 2, 0, "NC State Wolfpack", label(cfg, "belltower", "Memorial Belltower"));
     }
 
     private static void buildClockFace(Canvas canvas, int cx, int cy, int cz, int dxStep, int dzStep, SceneConfig.Colors c) {
-        for (int dy = -1; dy <= 1; dy++) {
-            for (int d = -1; d <= 1; d++) {
-                canvas.set(cx + d * dxStep, cy + dy, cz + d * dzStep, c.white());
-            }
-        }
         canvas.set(cx, cy, cz, c.black());
-        canvas.set(cx, cy + 1, cz, c.black());
-        canvas.set(cx + dxStep, cy, cz + dzStep, c.black());
+        canvas.set(cx + dxStep, cy, cz + dzStep, c.white());
+        canvas.set(cx - dxStep, cy, cz - dzStep, c.white());
+        canvas.set(cx, cy + 1, cz, c.white());
     }
 
     // -- Wolf mascot statue ------------------------------------------------
@@ -747,55 +753,43 @@ public final class CampusScene {
         int r = cfg.plazaRadius();
         SceneConfig.Colors c = cfg.colors();
 
-        int baseX = Math.max(12, r - 14);
-        int baseZ = Math.max(10, r / 3);
+        int baseX = Math.max(8, r - 10);
+        int baseZ = -2;
 
         // 1. Multi-tiered Pedestal (y = 1 to 2) in pure concrete
-        canvas.fillBox(baseX - 3, 1, baseZ - 4, baseX + 3, 1, baseZ + 4, c.concreteBlack());
-        canvas.fillBox(baseX - 2, 2, baseZ - 3, baseX + 2, 2, baseZ + 3, c.primaryRed());
-        canvas.ring(baseX - 2, baseZ - 3, baseX + 2, baseZ + 3, 2, c.concreteWhite());
+        canvas.fillBox(baseX - 2, 1, baseZ - 3, baseX + 2, 1, baseZ + 3, c.concreteBlack());
+        canvas.fillBox(baseX - 1, 2, baseZ - 2, baseX + 1, 2, baseZ + 2, c.primaryRed());
 
-        // 2. Sculpted Wolf Body in pure Concrete (y = 3 to 12)
-        // Four muscular legs & paws in black concrete
-        canvas.fillBox(baseX - 2, 3, baseZ - 2, baseX - 2, 4, baseZ - 2, c.concreteBlack());
-        canvas.fillBox(baseX + 2, 3, baseZ - 2, baseX + 2, 4, baseZ - 2, c.concreteBlack());
-        canvas.fillBox(baseX - 2, 3, baseZ + 2, baseX - 2, 4, baseZ + 2, c.concreteBlack());
-        canvas.fillBox(baseX + 2, 3, baseZ + 2, baseX + 2, 4, baseZ + 2, c.concreteBlack());
+        // 2. Sculpted Wolf Body in pure Concrete (y = 3 to 9)
+        // Four paws & legs
+        canvas.set(baseX - 1, 3, baseZ - 2, c.concreteBlack());
+        canvas.set(baseX + 1, 3, baseZ - 2, c.concreteBlack());
+        canvas.set(baseX - 1, 3, baseZ + 2, c.concreteBlack());
+        canvas.set(baseX + 1, 3, baseZ + 2, c.concreteBlack());
 
-        // Muscular Torso & Wolfpack Red Coat
-        canvas.fillBox(baseX - 2, 5, baseZ - 2, baseX + 2, 7, baseZ + 2, c.primaryRed());
-        // White underbelly
-        canvas.fillBox(baseX - 1, 5, baseZ - 1, baseX + 1, 5, baseZ + 1, c.concreteWhite());
-        // Black blanket trim
-        canvas.ring(baseX - 2, baseZ - 2, baseX + 2, baseZ + 2, 7, c.concreteBlack());
+        // Torso & Wolfpack Red Coat
+        canvas.fillBox(baseX - 1, 4, baseZ - 2, baseX + 1, 5, baseZ + 2, c.primaryRed());
+        canvas.set(baseX, 4, baseZ, c.concreteWhite()); // underbelly
 
-        // Tail (curving upwards proudly)
-        canvas.fillBox(baseX + 3, 6, baseZ + 1, baseX + 3, 8, baseZ + 2, c.primaryRed());
-        canvas.set(baseX + 3, 9, baseZ + 2, c.concreteBlack());
-        canvas.set(baseX + 2, 9, baseZ + 2, c.concreteWhite());
+        // Tail
+        canvas.set(baseX + 2, 5, baseZ + 2, c.primaryRed());
+        canvas.set(baseX + 2, 6, baseZ + 2, c.concreteBlack());
 
-        // Broad Chest & Raised Neck (tilted upward in a howl)
-        canvas.fillBox(baseX - 1, 6, baseZ - 3, baseX + 1, 8, baseZ - 2, c.primaryRed());
-        canvas.fillBox(baseX - 1, 7, baseZ - 4, baseX + 1, 9, baseZ - 3, c.primaryRed());
-        // White chest ruff
-        canvas.fillBox(baseX - 1, 6, baseZ - 3, baseX + 1, 8, baseZ - 3, c.concreteWhite());
+        // Chest & Neck (tilted upward in a howl)
+        canvas.fillBox(baseX - 1, 5, baseZ - 2, baseX + 1, 6, baseZ - 2, c.primaryRed());
+        canvas.set(baseX, 5, baseZ - 2, c.concreteWhite());
 
-        // Howling Wolf Head & Snout (tilted upwards)
-        canvas.fillBox(baseX - 1, 9, baseZ - 4, baseX + 1, 10, baseZ - 3, c.primaryRed());
-        // Raised muzzle
-        canvas.fillBox(baseX - 1, 9, baseZ - 5, baseX + 1, 10, baseZ - 4, c.concreteWhite());
-        canvas.set(baseX, 10, baseZ - 5, c.black()); // nose
-        // Glowing red eyes
-        canvas.set(baseX - 1, 10, baseZ - 3, c.primaryRed());
-        canvas.set(baseX + 1, 10, baseZ - 3, c.primaryRed());
-        // Pointed alert ears
-        canvas.set(baseX - 1, 11, baseZ - 3, c.concreteBlack());
-        canvas.set(baseX + 1, 11, baseZ - 3, c.concreteBlack());
-        canvas.set(baseX - 1, 12, baseZ - 3, c.concreteBlack());
-        canvas.set(baseX + 1, 12, baseZ - 3, c.concreteBlack());
+        // Howling Wolf Head & Snout
+        canvas.fillBox(baseX - 1, 7, baseZ - 3, baseX + 1, 8, baseZ - 2, c.primaryRed());
+        canvas.set(baseX, 7, baseZ - 4, c.concreteWhite()); // muzzle
+        canvas.set(baseX, 8, baseZ - 4, c.black()); // nose
+        canvas.set(baseX - 1, 8, baseZ - 2, c.primaryRed()); // eyes
+        canvas.set(baseX + 1, 8, baseZ - 2, c.primaryRed());
+        canvas.set(baseX - 1, 9, baseZ - 2, c.concreteBlack()); // ears
+        canvas.set(baseX + 1, 9, baseZ - 2, c.concreteBlack());
 
         // Plaque Sign
-        canvas.sign(baseX, 1, baseZ + 5, 8, "NC State Wolfpack", label(cfg, "wolf-statue", "Howl at the Wolfpack statue"));
+        canvas.sign(baseX, 1, baseZ + 4, 8, "NC State Wolfpack", label(cfg, "wolf-statue", "Howl at the Wolfpack statue"));
     }
 
     // -- Free Expression Tunnel-style mural walkway -----------------------
@@ -804,11 +798,11 @@ public final class CampusScene {
         int r = cfg.plazaRadius();
         SceneConfig.Colors c = cfg.colors();
 
-        int xCenter = -Math.max(16, r - 12);
-        int halfW = 3;
+        int xCenter = -Math.max(9, r - 9);
+        int halfW = 2;
         int xMin = xCenter - halfW;
         int xMax = xCenter + halfW;
-        int zLen = Math.min(8, r / 4 + 1);
+        int zLen = Math.min(4, r / 4 + 1);
 
         // Walkway Floor in pure concrete
         canvas.fillBox(xMin, 0, -zLen, xMax, 0, zLen, c.concreteBlack());
@@ -820,25 +814,23 @@ public final class CampusScene {
 
         // Outer Vault Walls in pure concrete
         for (int z = -zLen; z <= zLen; z++) {
-            canvas.fillBox(xMin, 1, z, xMin, 4, z, c.concreteBlack());
-            canvas.fillBox(xMax, 1, z, xMax, 4, z, c.concreteBlack());
-            canvas.set(xMin + 1, 5, z, c.primaryRed());
-            canvas.set(xMax - 1, 5, z, c.primaryRed());
-            canvas.fillBox(xMin + 2, 5, z, xMax - 2, 5, z, c.concreteBlack());
+            canvas.fillBox(xMin, 1, z, xMin, 3, z, c.concreteBlack());
+            canvas.fillBox(xMax, 1, z, xMax, 3, z, c.concreteBlack());
+            canvas.set(xMin + 1, 4, z, c.primaryRed());
+            canvas.set(xMax - 1, 4, z, c.primaryRed());
+            canvas.set(xCenter, 4, z, c.concreteBlack());
         }
 
         // Arched Entry Portals (North and South)
         for (int endZ : new int[]{-zLen, zLen}) {
             canvas.ring(xMin, endZ, xMax, endZ, 1, c.concreteWhite());
             canvas.ring(xMin, endZ, xMax, endZ, 2, c.concreteWhite());
-            canvas.ring(xMin, endZ, xMax, endZ, 3, c.concreteWhite());
-            canvas.fillBox(xMin + 1, 1, endZ, xMax - 1, 3, endZ, "AIR");
-            canvas.set(xCenter, 4, endZ, c.primaryRed());
+            canvas.fillBox(xMin + 1, 1, endZ, xMax - 1, 2, endZ, "AIR");
+            canvas.set(xCenter, 3, endZ, c.primaryRed());
         }
 
         // Ceiling Lantern Fixtures
-        for (int z = -zLen + 2; z <= zLen - 2; z += 3) {
-            canvas.set(xCenter, 4, z, "CHAIN");
+        for (int z = -zLen + 1; z <= zLen - 1; z += 2) {
             canvas.set(xCenter, 3, z, "LANTERN");
         }
 
@@ -851,7 +843,7 @@ public final class CampusScene {
         };
         int idx = 0;
         for (int z = -zLen + 1; z <= zLen - 1; z++) {
-            for (int y = 1; y <= 3; y++) {
+            for (int y = 1; y <= 2; y++) {
                 String m1 = muralMaterials[Math.floorMod(idx + y, muralMaterials.length)];
                 String m2 = muralMaterials[Math.floorMod(idx * 2 + y, muralMaterials.length)];
                 canvas.set(xMin + 1, y, z, m1);
@@ -870,51 +862,39 @@ public final class CampusScene {
         int r = cfg.plazaRadius();
         SceneConfig.Colors c = cfg.colors();
 
-        int z = Math.max(14, r - 4);
-        int halfWidth = Math.min(18, r / 2 + 3);
-        int height = 16;
+        int z = Math.max(10, r - 3);
+        int halfWidth = Math.min(10, r / 2);
+        int height = 12;
 
         // Backing Wall of Red Concrete
         canvas.fillBox(-halfWidth, 1, z, halfWidth, height, z, c.primaryRed());
 
         // Modern White Concrete Structural Columns
-        for (int x = -halfWidth; x <= halfWidth; x += 4) {
+        for (int x = -halfWidth; x <= halfWidth; x += 3) {
             canvas.fillBox(x, 1, z, x, height, z, c.concreteWhite());
         }
 
         // 2-Story Modern Tinted Panels
         for (int x = -halfWidth + 1; x <= halfWidth - 1; x++) {
-            if (Math.abs(x % 4) != 0) {
-                canvas.fillBox(x, 2, z, x, 5, z, c.concreteBlack());
-                canvas.fillBox(x, 9, z, x, 12, z, c.concreteBlack());
+            if (Math.abs(x % 3) != 0) {
+                canvas.fillBox(x, 2, z, x, 4, z, c.concreteBlack());
+                canvas.fillBox(x, 7, z, x, 9, z, c.concreteBlack());
             }
         }
 
-        // Second-Story Student Terrace / Balcony at y = 7
-        canvas.fillBox(-halfWidth, 7, z - 1, halfWidth, 7, z, c.concreteBlack());
-        canvas.fillBox(-halfWidth, 8, z - 1, halfWidth, 8, z - 1, "IRON_BARS");
+        // Second-Story Balcony
+        canvas.fillBox(-halfWidth, 5, z - 1, halfWidth, 5, z, c.concreteBlack());
+        canvas.fillBox(-halfWidth, 6, z - 1, halfWidth, 6, z - 1, "IRON_BARS");
 
-        // Double-Height Main Entrance Portal
-        canvas.fillBox(-2, 1, z, 2, 4, z, "AIR");
-        canvas.fillBox(-2, 1, z, -2, 4, z, c.concreteWhite());
-        canvas.fillBox(2, 1, z, 2, 4, z, c.concreteWhite());
-        canvas.set(-1, 1, z, c.concreteBlack());
-        canvas.set(0, 1, z, c.concreteBlack());
-        canvas.set(1, 1, z, c.concreteBlack());
-        canvas.set(-1, 2, z, c.concreteBlack());
-        canvas.set(0, 2, z, c.concreteBlack());
-        canvas.set(1, 2, z, c.concreteBlack());
+        // Main Entrance Portal
+        canvas.fillBox(-1, 1, z, 1, 3, z, "AIR");
+        canvas.set(0, 4, z - 1, c.primaryRed());
 
-        // Cantilevered Modern Entrance Canopy
-        canvas.fillBox(-3, 4, z - 2, 3, 4, z, c.concreteBlack());
-        canvas.fillBox(-2, 5, z - 2, 2, 5, z, c.primaryRed());
-
-        // Wolfpack Header Parapet & Cornice
-        canvas.fillBox(-halfWidth, height - 2, z, halfWidth, height, z, c.concreteBlack());
-        canvas.fillBox(-halfWidth, height + 1, z - 1, halfWidth, height + 1, z, c.concreteBlack());
+        // Header Parapet
+        canvas.fillBox(-halfWidth, height, z, halfWidth, height, z, c.concreteBlack());
 
         // Landmark Sign
-        canvas.sign(0, 1, z - 3, 0, "NC State Wolfpack", label(cfg, "union-facade", "Talley Student Union"));
+        canvas.sign(0, 1, z - 2, 0, "NC State Wolfpack", label(cfg, "union-facade", "Talley Student Union"));
     }
 
     // -- D. H. Hill Jr. Library-style facade ------------------------------
@@ -923,43 +903,36 @@ public final class CampusScene {
         int r = cfg.plazaRadius();
         SceneConfig.Colors c = cfg.colors();
 
-        int x = Math.max(14, r - 4);
-        int halfWidth = Math.min(18, r / 2 + 3);
-        int height = 18;
+        int x = Math.max(10, r - 3);
+        int halfWidth = Math.min(10, r / 2);
+        int height = 12;
 
         // Backing Wall of Red Concrete
         canvas.fillBox(x, 1, -halfWidth, x, height, halfWidth, c.primaryRed());
 
         // Collegiate Vertical Louvers & Window Pillars
-        for (int z = -halfWidth; z <= halfWidth; z += 4) {
+        for (int z = -halfWidth; z <= halfWidth; z += 3) {
             canvas.fillBox(x, 1, z, x, height, z, c.concreteWhite());
         }
 
-        // High Vertical Bookshelves
+        // Bookshelves Visible Inside
         for (int z = -halfWidth + 1; z <= halfWidth - 1; z++) {
-            if (Math.abs(z % 4) != 0) {
-                canvas.fillBox(x, 2, z, x, height - 4, z, c.concreteBlack());
+            if (Math.abs(z % 3) != 0) {
+                canvas.fillBox(x, 2, z, x, height - 3, z, c.concreteBlack());
                 canvas.set(x - 1, 2, z, "BOOKSHELF");
-                canvas.set(x - 1, 3, z, "BOOKSHELF");
-                canvas.set(x - 1, 7, z, "BOOKSHELF");
-                canvas.set(x - 1, 8, z, "BOOKSHELF");
+                canvas.set(x - 1, 6, z, "BOOKSHELF");
             }
         }
 
-        // Grand Library Entrance Portico (centered at z = 0)
-        canvas.fillBox(x, 1, -2, x, 5, 2, "AIR");
-        canvas.fillBox(x, 1, -2, x, 5, -2, c.concreteWhite());
-        canvas.fillBox(x, 1, 2, x, 5, 2, c.concreteWhite());
-        canvas.fillBox(x, 1, -1, x, 3, 1, c.concreteBlack());
-        canvas.fillBox(x - 1, 5, -3, x, 5, 3, c.concreteBlack());
-        canvas.fillBox(x - 1, 6, -2, x, 6, 2, c.primaryRed());
+        // Library Entrance Portico
+        canvas.fillBox(x, 1, -1, x, 3, 1, "AIR");
+        canvas.set(x - 1, 4, 0, c.primaryRed());
 
-        // Collegiate Parapet & Wolfpack Header Frieze
-        canvas.fillBox(x, height - 2, -halfWidth, x, height, halfWidth, c.concreteBlack());
-        canvas.fillBox(x - 1, height + 1, -halfWidth, x, height + 1, halfWidth, c.concreteBlack());
+        // Header Parapet
+        canvas.fillBox(x, height, -halfWidth, x, height, halfWidth, c.concreteBlack());
 
         // Landmark Sign
-        canvas.sign(x - 3, 1, 0, 12, "NC State Wolfpack", label(cfg, "library-facade", "D. H. Hill Jr. Library"));
+        canvas.sign(x - 2, 1, 0, 12, "NC State Wolfpack", label(cfg, "library-facade", "D. H. Hill Jr. Library"));
     }
 
     private static String label(SceneConfig cfg, String key, String fallback) {

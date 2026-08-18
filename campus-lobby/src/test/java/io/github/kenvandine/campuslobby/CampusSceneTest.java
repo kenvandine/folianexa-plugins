@@ -27,7 +27,10 @@ class CampusSceneTest {
         assertTrue(signText.contains("Free Expression Tunnel"));
         assertTrue(signText.contains("Talley Student Union"));
         assertTrue(signText.contains("D. H. Hill Jr. Library"));
-        assertEquals(5, scene.signs().size());
+        assertTrue(signText.contains("Resource Realm"));
+        assertTrue(signText.contains("Survival World"));
+        assertTrue(signText.contains("Minigames Hub"));
+        assertEquals(8, scene.signs().size());
     }
 
     @Test
@@ -56,7 +59,7 @@ class CampusSceneTest {
         SceneConfig cfg = new SceneConfig(
                 defaults.plazaRadius(),
                 defaults.towerHeight(),
-                new SceneConfig.Include(true, false, false, false, false),
+                new SceneConfig.Include(true, false, false, false, false, false, false),
                 defaults.colors(),
                 Map.of(),
                 defaults.clear(),
@@ -112,10 +115,11 @@ class CampusSceneTest {
         wolfpackColors.add(cfg.colors().concreteLightGray());
         wolfpackColors.addAll(List.of(
                 "RED_BANNER", "WHITE_BANNER", "BLACK_BANNER", "POLISHED_BLACKSTONE", "POLISHED_BLACKSTONE_WALL",
-                "POLISHED_BLACKSTONE_SLAB", "SMOOTH_STONE", "SMOOTH_STONE_SLAB", "LANTERN",
+                "POLISHED_BLACKSTONE_SLAB", "SMOOTH_STONE", "SMOOTH_STONE_SLAB", "LANTERN", "SOUL_LANTERN",
                 "SEA_LANTERN", "RED_STAINED_GLASS", "RED_STAINED_GLASS_PANE", "BLACK_STAINED_GLASS_PANE",
                 "WHITE_STAINED_GLASS_PANE", "IRON_BARS", "MOSS_BLOCK", "AZALEA_LEAVES", "RED_TULIP",
-                "WHITE_TULIP", "CHAIN", "BELL", "LIGHTNING_ROD", "BOOKSHELF", "AIR"
+                "WHITE_TULIP", "CHAIN", "BELL", "LIGHTNING_ROD", "BOOKSHELF", "AIR",
+                "OBSIDIAN", "CRYING_OBSIDIAN", "NETHER_PORTAL"
         ));
 
         long total = scene.blocks().size();
@@ -132,7 +136,7 @@ class CampusSceneTest {
         SceneConfig cfg = new SceneConfig(
                 defaults.plazaRadius(),
                 defaults.towerHeight(),
-                new SceneConfig.Include(false, false, false, false, false, false),
+                new SceneConfig.Include(false, false, false, false, false, false, false),
                 defaults.colors(),
                 Map.of(),
                 defaults.clear(),
@@ -167,8 +171,8 @@ class CampusSceneTest {
     @Test
     void smallerPlazaRadiusStillGeneratesWithoutError() {
         SceneConfig cfg = new SceneConfig(
+                12,
                 16,
-                20,
                 SceneConfig.defaults().include(),
                 SceneConfig.defaults().colors(),
                 Map.of(),
@@ -180,7 +184,7 @@ class CampusSceneTest {
 
         assertFalse(scene.blocks().isEmpty());
         List<BlockPlacement> outOfBounds = scene.blocks().stream()
-                .filter(b -> Math.abs(b.dx()) > 60 || Math.abs(b.dz()) > 60)
+                .filter(b -> Math.abs(b.dx()) > 50 || Math.abs(b.dz()) > 50)
                 .toList();
         assertTrue(outOfBounds.isEmpty(), "no landmark should sprawl unreasonably far past the plaza: " + outOfBounds.size());
     }
@@ -198,7 +202,7 @@ class CampusSceneTest {
                 .filter(b -> concreteMaterials.contains(b.material()))
                 .count();
 
-        assertTrue(concreteBlockCount > 4000, "expected abundant concrete blocks throughout the scene, got: " + concreteBlockCount);
+        assertTrue(concreteBlockCount > 2000, "expected abundant concrete blocks throughout the scene, got: " + concreteBlockCount);
 
         // Verify no terracotta blocks are present
         boolean hasTerracotta = scene.blocks().stream().anyMatch(b -> b.material().contains("TERRACOTTA"));
@@ -231,20 +235,39 @@ class CampusSceneTest {
     }
 
     @Test
+    void tripleNetherPortalsArePlacedWithObsidianAndPortalBlocks() {
+        CampusScene.Scene scene = CampusScene.generate(SceneConfig.defaults());
+
+        long netherPortalBlocks = scene.blocks().stream()
+                .filter(b -> "NETHER_PORTAL".equals(b.material()))
+                .count();
+        long obsidianBlocks = scene.blocks().stream()
+                .filter(b -> "OBSIDIAN".equals(b.material()) || "CRYING_OBSIDIAN".equals(b.material()))
+                .count();
+        long soulLanterns = scene.blocks().stream()
+                .filter(b -> "SOUL_LANTERN".equals(b.material()))
+                .count();
+
+        assertTrue(netherPortalBlocks >= 20, "Should generate 3 nether portal openings: " + netherPortalBlocks);
+        assertTrue(obsidianBlocks >= 30, "Should feature gothic obsidian portal frames: " + obsidianBlocks);
+        assertTrue(soulLanterns >= 3, "Should feature 3 soul lanterns for the 3 portals: " + soulLanterns);
+    }
+
+    @Test
     void enclosureEnclosesEntirePlazaAndContainsBelltower() {
         SceneConfig cfg = SceneConfig.defaults();
         CampusScene.Scene scene = CampusScene.generate(cfg);
 
         // Ceiling should sit above belltower spire
         int maxY = scene.blocks().stream().mapToInt(BlockPlacement::dy).max().orElseThrow();
-        assertTrue(maxY >= cfg.towerHeight() + 10, "Enclosure ceiling should sit tall above the belltower");
+        assertTrue(maxY >= cfg.towerHeight() + 4, "Enclosure ceiling should sit tall above the belltower");
 
         // Four perimeter walls should exist along the boundaries
         int r = cfg.plazaRadius();
-        boolean hasNorthWall = scene.blocks().stream().anyMatch(b -> b.dz() == -r && b.dy() > 20);
-        boolean hasSouthWall = scene.blocks().stream().anyMatch(b -> b.dz() == r && b.dy() > 20);
-        boolean hasWestWall = scene.blocks().stream().anyMatch(b -> b.dx() == -r && b.dy() > 20);
-        boolean hasEastWall = scene.blocks().stream().anyMatch(b -> b.dx() == r && b.dy() > 20);
+        boolean hasNorthWall = scene.blocks().stream().anyMatch(b -> b.dz() == -r && b.dy() > 15);
+        boolean hasSouthWall = scene.blocks().stream().anyMatch(b -> b.dz() == r && b.dy() > 15);
+        boolean hasWestWall = scene.blocks().stream().anyMatch(b -> b.dx() == -r && b.dy() > 15);
+        boolean hasEastWall = scene.blocks().stream().anyMatch(b -> b.dx() == r && b.dy() > 15);
 
         assertTrue(hasNorthWall && hasSouthWall && hasWestWall && hasEastWall,
                 "All 4 perimeter walls should be present in the enclosure");
@@ -256,17 +279,16 @@ class CampusSceneTest {
         CampusScene.Scene scene = CampusScene.generate(cfg);
 
         int r = cfg.plazaRadius();
-        int ceilingY = Math.max(48, cfg.towerHeight() + 12);
 
         // Check outer perimeter walls for glass
         boolean outerWallHasGlass = scene.blocks().stream()
-                .filter(b -> (Math.abs(b.dx()) == r || Math.abs(b.dz()) == r) && b.dy() >= 1 && b.dy() <= ceilingY)
+                .filter(b -> (Math.abs(b.dx()) == r || Math.abs(b.dz()) == r) && b.dy() >= 1)
                 .anyMatch(b -> b.material().contains("GLASS"));
         assertFalse(outerWallHasGlass, "Outer perimeter walls must be solid with no glass to prevent looking outside");
 
         // Check ceiling for glass
         boolean ceilingHasGlass = scene.blocks().stream()
-                .filter(b -> b.dy() >= ceilingY)
+                .filter(b -> b.dy() >= 25)
                 .anyMatch(b -> b.material().contains("GLASS"));
         assertFalse(ceilingHasGlass, "Ceiling must be closed with solid blocks with no glass");
     }
@@ -283,6 +305,6 @@ class CampusSceneTest {
         long lightningRodCount = scene.blocks().stream()
                 .filter(b -> "LIGHTNING_ROD".equals(b.material()))
                 .count();
-        assertTrue(lightningRodCount >= 5, "Belltower should feature corner pinnacles and spire rod");
+        assertTrue(lightningRodCount >= 4, "Belltower and portals should feature lightning rod finials");
     }
 }

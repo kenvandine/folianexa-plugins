@@ -25,10 +25,15 @@ public record SceneConfig(
             boolean tunnel,
             boolean unionFacade,
             boolean libraryFacade,
-            boolean enclosure
+            boolean enclosure,
+            boolean portals
     ) {
+        public Include(boolean belltower, boolean wolfStatue, boolean tunnel, boolean unionFacade, boolean libraryFacade, boolean enclosure) {
+            this(belltower, wolfStatue, tunnel, unionFacade, libraryFacade, enclosure, true);
+        }
+
         public Include(boolean belltower, boolean wolfStatue, boolean tunnel, boolean unionFacade, boolean libraryFacade) {
-            this(belltower, wolfStatue, tunnel, unionFacade, libraryFacade, true);
+            this(belltower, wolfStatue, tunnel, unionFacade, libraryFacade, true, true);
         }
     }
 
@@ -71,9 +76,9 @@ public record SceneConfig(
     /** Matches the shipped config.yml defaults exactly. */
     public static SceneConfig defaults() {
         return new SceneConfig(
-                32,
-                36,
-                new Include(true, true, true, true, true, true),
+                20,
+                24,
+                new Include(true, true, true, true, true, true, true),
                 new Colors(
                         "RED_CONCRETE",
                         "WHITE_CONCRETE",
@@ -89,8 +94,8 @@ public record SceneConfig(
                         "LIGHT_GRAY_CONCRETE"
                 ),
                 Map.of(),
-                new Clear(10, 14),
-                8
+                new Clear(8, 10),
+                6
         );
     }
 }

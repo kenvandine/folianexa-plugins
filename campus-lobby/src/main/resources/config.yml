@@ -6,11 +6,11 @@
 scene:
   # Plaza (the "Brickyard") half-width in blocks. The plaza is a square
   # centered on the build origin, (2 * plaza-radius + 1) blocks per side.
-  # 32 gives a grand, perfectly-proportioned ~65x65 enclosed campus arena.
-  plaza-radius: 32
+  # 20 gives a cozy, action-packed ~41x41 enclosed campus lobby arena.
+  plaza-radius: 20
 
   # Belltower height in blocks, measured from the plaza surface.
-  tower-height: 36
+  tower-height: 24
 
   # Which landmarks to place. All default on; turn any off to keep the
   # scene smaller/faster to place.
@@ -21,6 +21,7 @@ scene:
     union-facade: true
     library-facade: true
     enclosure: true
+    portals: true
 
   # Wolfpack color palette. Styled with pure vibrant dyed concrete in NC State
   # Red, White, and Black for maximum contrast and bold spirit.
@@ -45,17 +46,17 @@ scene:
   clear:
     # Horizontal margin (blocks) cleared beyond the generated scene's
     # own footprint.
-    padding: 10
+    padding: 8
     # Vertical margin (blocks) cleared above the tallest generated
     # feature (the enclosure ceiling, by default).
-    height-above: 14
+    height-above: 10
 
   # Extra margin (blocks) beyond the cleared area before the world
   # border kicks in. The lobby world's border is set to hug the
   # cleared area (see clear above) plus this margin, so players can't
   # wander out of the lobby into the rest of the world — it's meant
   # purely as a jumping-off point to other worlds.
-  border-margin: 8
+  border-margin: 6
 
 # Labels shown on the standing signs CampusLobby places near each
 # landmark. Purely cosmetic signage — CampusLobby does not handle
@@ -69,5 +70,10 @@ signs:
   tunnel: "Free Expression Tunnel"
   union-facade: "Talley Student Union"
   library-facade: "D. H. Hill Jr. Library"
+  portals: "Nether Portals"
+  portal-left: "Resource Realm"
+  portal-center: "Survival World"
+  portal-right: "Minigames Hub"
+
 
 
