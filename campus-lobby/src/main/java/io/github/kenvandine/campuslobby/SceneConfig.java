@@ -76,8 +76,8 @@ public record SceneConfig(
     /** Matches the shipped config.yml defaults exactly. */
     public static SceneConfig defaults() {
         return new SceneConfig(
-                20,
-                24,
+                15,
+                18,
                 new Include(true, true, true, true, true, true, true),
                 new Colors(
                         "RED_CONCRETE",
@@ -94,8 +94,8 @@ public record SceneConfig(
                         "LIGHT_GRAY_CONCRETE"
                 ),
                 Map.of(),
-                new Clear(8, 10),
-                6
+                new Clear(6, 8),
+                4
         );
     }
 }

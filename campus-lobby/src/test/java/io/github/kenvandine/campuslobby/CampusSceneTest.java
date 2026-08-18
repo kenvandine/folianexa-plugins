@@ -115,7 +115,7 @@ class CampusSceneTest {
         wolfpackColors.add(cfg.colors().concreteLightGray());
         wolfpackColors.addAll(List.of(
                 "RED_BANNER", "WHITE_BANNER", "BLACK_BANNER", "POLISHED_BLACKSTONE", "POLISHED_BLACKSTONE_WALL",
-                "POLISHED_BLACKSTONE_SLAB", "SMOOTH_STONE", "SMOOTH_STONE_SLAB", "LANTERN", "SOUL_LANTERN",
+                "POLISHED_BLACKSTONE_SLAB", "SMOOTH_STONE", "SMOOTH_STONE_SLAB", "CRIMSON_SLAB", "LANTERN", "SOUL_LANTERN",
                 "SEA_LANTERN", "RED_STAINED_GLASS", "RED_STAINED_GLASS_PANE", "BLACK_STAINED_GLASS_PANE",
                 "WHITE_STAINED_GLASS_PANE", "IRON_BARS", "MOSS_BLOCK", "AZALEA_LEAVES", "RED_TULIP",
                 "WHITE_TULIP", "CHAIN", "BELL", "LIGHTNING_ROD", "BOOKSHELF", "AIR",
@@ -251,6 +251,11 @@ class CampusSceneTest {
         assertTrue(netherPortalBlocks >= 20, "Should generate 3 nether portal openings: " + netherPortalBlocks);
         assertTrue(obsidianBlocks >= 30, "Should feature gothic obsidian portal frames: " + obsidianBlocks);
         assertTrue(soulLanterns >= 3, "Should feature 3 soul lanterns for the 3 portals: " + soulLanterns);
+
+        long starSlabs = scene.blocks().stream()
+                .filter(b -> b.material().contains("SLAB"))
+                .count();
+        assertTrue(starSlabs >= 15, "Should generate decorative Wolfpack slabs for star pathways: " + starSlabs);
     }
 
     @Test

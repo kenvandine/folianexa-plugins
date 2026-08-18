@@ -6,11 +6,11 @@
 scene:
   # Plaza (the "Brickyard") half-width in blocks. The plaza is a square
   # centered on the build origin, (2 * plaza-radius + 1) blocks per side.
-  # 20 gives a cozy, action-packed ~41x41 enclosed campus lobby arena.
-  plaza-radius: 20
+  # 15 gives an ultra-compact, high-intensity ~31x31 enclosed campus lobby arena.
+  plaza-radius: 15
 
   # Belltower height in blocks, measured from the plaza surface.
-  tower-height: 24
+  tower-height: 18
 
   # Which landmarks to place. All default on; turn any off to keep the
   # scene smaller/faster to place.
@@ -46,17 +46,17 @@ scene:
   clear:
     # Horizontal margin (blocks) cleared beyond the generated scene's
     # own footprint.
-    padding: 8
+    padding: 6
     # Vertical margin (blocks) cleared above the tallest generated
     # feature (the enclosure ceiling, by default).
-    height-above: 10
+    height-above: 8
 
   # Extra margin (blocks) beyond the cleared area before the world
   # border kicks in. The lobby world's border is set to hug the
   # cleared area (see clear above) plus this margin, so players can't
   # wander out of the lobby into the rest of the world — it's meant
   # purely as a jumping-off point to other worlds.
-  border-margin: 6
+  border-margin: 4
 
 # Labels shown on the standing signs CampusLobby places near each
 # landmark. Purely cosmetic signage — CampusLobby does not handle
