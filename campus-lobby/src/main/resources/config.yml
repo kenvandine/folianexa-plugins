@@ -20,6 +20,7 @@ scene:
     tunnel: true
     union-facade: true
     library-facade: true
+    enclosure: true
 
   # Wolfpack color & colored clay palette. Values are org.bukkit.Material
   # names — styled with NC State red/white/black and rich terracotta/colored clay.

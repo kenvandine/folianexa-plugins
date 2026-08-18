@@ -32,6 +32,9 @@ public final class CampusScene {
 
     public static Scene generate(SceneConfig cfg) {
         Canvas canvas = new Canvas();
+        if (cfg.include().enclosure()) {
+            buildEnclosure(canvas, cfg);
+        }
         buildPlaza(canvas, cfg);
         if (cfg.include().belltower()) {
             buildBelltower(canvas, cfg);
@@ -51,27 +54,151 @@ public final class CampusScene {
         return canvas.toScene();
     }
 
+    // -- Enclosure: 4 Decorated Perimeter Walls & Grand Ceiling ----------
+
+    private static void buildEnclosure(Canvas canvas, SceneConfig cfg) {
+        int r = cfg.plazaRadius();
+        int height = cfg.towerHeight();
+        SceneConfig.Colors c = cfg.colors();
+
+        int ceilingY = Math.max(68, height + 14);
+
+        // 1. Four Decorated Boundary Walls (North, South, East, West)
+        for (int y = 1; y <= ceilingY; y++) {
+            for (int x = -r; x <= r; x++) {
+                decorateWallBlock(canvas, x, y, -r, true, y, ceilingY, c); // North wall
+                decorateWallBlock(canvas, x, y, r, true, y, ceilingY, c);  // South wall
+            }
+            for (int z = -r; z <= r; z++) {
+                decorateWallBlock(canvas, -r, y, z, false, y, ceilingY, c); // West wall
+                decorateWallBlock(canvas, r, y, z, false, y, ceilingY, c);  // East wall
+            }
+        }
+
+        // 2. High Vaulted Atrium Ceiling with Coffers, Trusses & Skylights (y = ceilingY to ceilingY + 2)
+        for (int x = -r; x <= r; x++) {
+            for (int z = -r; z <= r; z++) {
+                boolean isBeam = (Math.abs(x) % 8 == 0) || (Math.abs(z) % 8 == 0);
+                boolean isMainCross = (Math.abs(x) <= 2) || (Math.abs(z) <= 2);
+                boolean isDiagonalCross = (Math.abs(x) == Math.abs(z));
+
+                if (isMainCross) {
+                    if (Math.abs(x) == 0 || Math.abs(z) == 0) {
+                        canvas.set(x, ceilingY, z, "WHITE_STAINED_GLASS_PANE");
+                        if (Math.abs(x) % 12 == 0 && Math.abs(z) % 12 == 0) {
+                            canvas.set(x, ceilingY + 1, z, "SEA_LANTERN");
+                        }
+                    } else {
+                        canvas.set(x, ceilingY, z, c.roof());
+                    }
+                } else if (isBeam) {
+                    canvas.set(x, ceilingY, z, c.roof());
+                    canvas.set(x, ceilingY - 1, z, c.clayBlack());
+                } else if (isDiagonalCross) {
+                    canvas.set(x, ceilingY, z, c.primaryRed());
+                } else {
+                    int panelTile = ((Math.floorDiv(x, 8) + Math.floorDiv(z, 8)) & 1);
+                    String panelMat = (panelTile == 0) ? c.clayBlack() : c.clayRed();
+                    canvas.set(x, ceilingY, z, panelMat);
+                }
+            }
+        }
+
+        // Outer roof trim
+        canvas.ring(-r, -r, r, r, ceilingY + 1, c.roof());
+        canvas.ring(-r, -r, r, r, ceilingY + 2, c.clayBlack());
+
+        // Hanging grand chandeliers from ceiling
+        int[] chandelierDistances = {16, 32};
+        for (int cx : chandelierDistances) {
+            if (cx < r - 8) {
+                for (int cz : chandelierDistances) {
+                    if (cz < r - 8) {
+                        placeChandelier(canvas, cx, ceilingY - 1, cz);
+                        placeChandelier(canvas, -cx, ceilingY - 1, cz);
+                        placeChandelier(canvas, cx, ceilingY - 1, -cz);
+                        placeChandelier(canvas, -cx, ceilingY - 1, -cz);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void decorateWallBlock(Canvas canvas, int x, int y, int z, boolean isNorthSouth, int yPos, int maxY, SceneConfig.Colors c) {
+        int coordinate = isNorthSouth ? x : z;
+        boolean isPilaster = (Math.abs(coordinate) % 8 == 0) || (Math.abs(coordinate) == Math.abs(isNorthSouth ? z : x));
+
+        // Lower wainscoting (y = 1 to 5)
+        if (yPos <= 3) {
+            canvas.set(x, y, z, c.roof());
+        } else if (yPos <= 5) {
+            canvas.set(x, y, z, isPilaster ? c.roof() : c.clayBlack());
+        } else if (yPos == 6) {
+            canvas.set(x, y, z, c.clayWhite());
+        } else if (yPos >= maxY - 4) {
+            // Upper frieze / cornice
+            if (yPos == maxY - 4) {
+                canvas.set(x, y, z, c.clayWhite());
+            } else if (yPos == maxY - 3 || yPos == maxY - 2) {
+                canvas.set(x, y, z, c.primaryRed());
+            } else {
+                canvas.set(x, y, z, c.roof());
+            }
+        } else {
+            // Mid wall field (y = 7 to maxY - 5)
+            if (isPilaster) {
+                canvas.set(x, y, z, c.roof());
+            } else {
+                int bayPos = Math.floorMod(coordinate, 8);
+                boolean isWindowSlot = (bayPos >= 3 && bayPos <= 5) && (yPos >= 12 && yPos <= maxY - 10);
+                if (isWindowSlot) {
+                    if (bayPos == 4) {
+                        canvas.set(x, y, z, "RED_STAINED_GLASS_PANE");
+                    } else {
+                        canvas.set(x, y, z, "BLACK_STAINED_GLASS_PANE");
+                    }
+                } else {
+                    int pattern = (yPos / 4 + Math.abs(coordinate) / 4) % 2;
+                    canvas.set(x, y, z, (pattern == 0) ? c.clayRed() : c.clayBlack());
+                }
+            }
+        }
+    }
+
+    private static void placeChandelier(Canvas canvas, int x, int topY, int z) {
+        for (int y = topY; y >= topY - 3; y--) {
+            canvas.set(x, y, z, "CHAIN");
+        }
+        int lightY = topY - 4;
+        canvas.set(x, lightY, z, "POLISHED_BLACKSTONE");
+        canvas.set(x + 1, lightY, z, "LANTERN");
+        canvas.set(x - 1, lightY, z, "LANTERN");
+        canvas.set(x, lightY, z + 1, "LANTERN");
+        canvas.set(x, lightY, z - 1, "LANTERN");
+        canvas.set(x, lightY - 1, z, "SEA_LANTERN");
+    }
+
     // -- The Brickyard: central plaza -----------------------------------
 
     private static void buildPlaza(Canvas canvas, SceneConfig cfg) {
         int r = cfg.plazaRadius();
         SceneConfig.Colors c = cfg.colors();
 
-        // The Brickyard: authentic alternating terracotta clay paver grid across the entire plaza floor.
+        // The Brickyard: high-contrast alternating Red Terracotta & Black Terracotta clay paver grid.
         for (int x = -r; x <= r; x++) {
             for (int z = -r; z <= r; z++) {
                 int tile = ((Math.floorDiv(x, 4) + Math.floorDiv(z, 4)) & 1);
-                String paver = (tile == 0) ? c.brick() : c.clayNormal();
+                String paver = (tile == 0) ? c.clayRed() : c.clayBlack();
                 canvas.set(x, 0, z, paver);
             }
         }
 
-        // Concentric perimeter borders in Wolfpack colors and colored clay.
-        canvas.ring(-r, -r, r, r, 0, c.clayBlack());
+        // Concentric perimeter borders in bold Wolfpack red, black, and white.
+        canvas.ring(-r, -r, r, r, 0, c.black());
         canvas.ring(-(r - 1), -(r - 1), r - 1, r - 1, 0, c.roof());
-        canvas.ring(-(r - 2), -(r - 2), r - 2, r - 2, 0, c.clayWhite());
-        canvas.ring(-(r - 3), -(r - 3), r - 3, r - 3, 0, c.primaryRed());
-        canvas.ring(-(r - 4), -(r - 4), r - 4, r - 4, 0, c.clayNormal());
+        canvas.ring(-(r - 2), -(r - 2), r - 2, r - 2, 0, c.primaryRed());
+        canvas.ring(-(r - 3), -(r - 3), r - 3, r - 3, 0, c.clayWhite());
+        canvas.ring(-(r - 4), -(r - 4), r - 4, r - 4, 0, c.clayBlack());
 
         // Grand central NC State "Block S" / Wolfpack medallion
         int medR = 9;
@@ -82,12 +209,15 @@ public final class CampusScene {
                     canvas.set(x, 0, z, c.primaryRed());
                 }
                 if (dist == 12 || (Math.abs(x) == medR && Math.abs(z) <= 3) || (Math.abs(z) == medR && Math.abs(x) <= 3)) {
+                    canvas.set(x, 0, z, c.black());
+                }
+                if (dist == 11) {
                     canvas.set(x, 0, z, c.clayWhite());
                 }
             }
         }
 
-        // Block S inlay in the medallion (white with black outline)
+        // Block S inlay in the medallion (white with bold black shadow outline)
         for (int x = -4; x <= 4; x++) {
             for (int z = -6; z <= 5; z++) {
                 if (isBlockS(x, z)) {
@@ -116,8 +246,8 @@ public final class CampusScene {
                 for (int dz = -1; dz <= 1; dz++) {
                     canvas.set(x, 0, dz, c.clayWhite());
                 }
-                canvas.set(x, 0, -2, c.clayBlack());
-                canvas.set(x, 0, 2, c.clayBlack());
+                canvas.set(x, 0, -2, c.black());
+                canvas.set(x, 0, 2, c.black());
                 canvas.set(x, 0, -3, c.primaryRed());
                 canvas.set(x, 0, 3, c.primaryRed());
             }
@@ -127,8 +257,8 @@ public final class CampusScene {
                 for (int dx = -1; dx <= 1; dx++) {
                     canvas.set(dx, 0, z, c.clayWhite());
                 }
-                canvas.set(-2, 0, z, c.clayBlack());
-                canvas.set(2, 0, z, c.clayBlack());
+                canvas.set(-2, 0, z, c.black());
+                canvas.set(2, 0, z, c.black());
                 canvas.set(-3, 0, z, c.primaryRed());
                 canvas.set(3, 0, z, c.primaryRed());
             }

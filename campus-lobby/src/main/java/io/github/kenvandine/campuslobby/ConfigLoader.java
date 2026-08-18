@@ -23,7 +23,8 @@ final class ConfigLoader {
                 config.getBoolean("scene.include.wolf-statue", true),
                 config.getBoolean("scene.include.tunnel", true),
                 config.getBoolean("scene.include.union-facade", true),
-                config.getBoolean("scene.include.library-facade", true)
+                config.getBoolean("scene.include.library-facade", true),
+                config.getBoolean("scene.include.enclosure", true)
         );
 
         SceneConfig.Colors defaultColors = defaults.colors();

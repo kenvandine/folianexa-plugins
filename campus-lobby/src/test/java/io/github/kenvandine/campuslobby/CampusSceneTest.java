@@ -113,8 +113,8 @@ class CampusSceneTest {
         wolfpackColors.addAll(List.of(
                 "RED_BANNER", "WHITE_BANNER", "POLISHED_BLACKSTONE", "POLISHED_BLACKSTONE_WALL",
                 "POLISHED_BLACKSTONE_SLAB", "SMOOTH_STONE", "SMOOTH_STONE_SLAB", "LANTERN",
-                "SEA_LANTERN", "RED_STAINED_GLASS", "RED_STAINED_GLASS_PANE", "IRON_BARS",
-                "MOSS_BLOCK", "AZALEA_LEAVES", "RED_TULIP", "WHITE_TULIP", "CHAIN", "BELL",
+                "SEA_LANTERN", "RED_STAINED_GLASS", "RED_STAINED_GLASS_PANE", "BLACK_STAINED_GLASS_PANE",
+                "IRON_BARS", "MOSS_BLOCK", "AZALEA_LEAVES", "RED_TULIP", "WHITE_TULIP", "CHAIN", "BELL",
                 "LIGHTNING_ROD", "BOOKSHELF", "AIR"
         ));
 
@@ -132,7 +132,7 @@ class CampusSceneTest {
         SceneConfig cfg = new SceneConfig(
                 defaults.plazaRadius(),
                 defaults.towerHeight(),
-                new SceneConfig.Include(false, false, false, false, false),
+                new SceneConfig.Include(false, false, false, false, false, false),
                 defaults.colors(),
                 Map.of(),
                 defaults.clear(),
@@ -224,5 +224,25 @@ class CampusSceneTest {
         assertTrue(hasBell, "Belltower belfry should include a bell");
         assertTrue(hasRedStainedGlass, "Belltower should include red stained glass victory lighting");
         assertTrue(hasLantern, "Belltower / plaza should include lanterns");
+    }
+
+    @Test
+    void enclosureEnclosesEntirePlazaAndContainsBelltower() {
+        SceneConfig cfg = SceneConfig.defaults();
+        CampusScene.Scene scene = CampusScene.generate(cfg);
+
+        // Ceiling should sit above belltower spire
+        int maxY = scene.blocks().stream().mapToInt(BlockPlacement::dy).max().orElseThrow();
+        assertTrue(maxY >= cfg.towerHeight() + 14, "Enclosure ceiling should sit tall above the belltower");
+
+        // Four perimeter walls should exist along the boundaries
+        int r = cfg.plazaRadius();
+        boolean hasNorthWall = scene.blocks().stream().anyMatch(b -> b.dz() == -r && b.dy() > 20);
+        boolean hasSouthWall = scene.blocks().stream().anyMatch(b -> b.dz() == r && b.dy() > 20);
+        boolean hasWestWall = scene.blocks().stream().anyMatch(b -> b.dx() == -r && b.dy() > 20);
+        boolean hasEastWall = scene.blocks().stream().anyMatch(b -> b.dx() == r && b.dy() > 20);
+
+        assertTrue(hasNorthWall && hasSouthWall && hasWestWall && hasEastWall,
+                "All 4 perimeter walls should be present in the enclosure");
     }
 }

@@ -24,8 +24,12 @@ public record SceneConfig(
             boolean wolfStatue,
             boolean tunnel,
             boolean unionFacade,
-            boolean libraryFacade
+            boolean libraryFacade,
+            boolean enclosure
     ) {
+        public Include(boolean belltower, boolean wolfStatue, boolean tunnel, boolean unionFacade, boolean libraryFacade) {
+            this(belltower, wolfStatue, tunnel, unionFacade, libraryFacade, true);
+        }
     }
 
     public record Colors(
@@ -62,7 +66,7 @@ public record SceneConfig(
         return new SceneConfig(
                 48,
                 54,
-                new Include(true, true, true, true, true),
+                new Include(true, true, true, true, true, true),
                 new Colors(
                         "RED_CONCRETE",
                         "WHITE_CONCRETE",
