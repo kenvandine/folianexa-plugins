@@ -58,6 +58,12 @@ scene:
   # purely as a jumping-off point to other worlds.
   border-margin: 4
 
+  # Set to true to build a compact 15x15x15 Wolfpack lobby instead of
+  # the full-size campus scene. This enforces plaza-radius=7 and enables
+  # only the enclosure and nether portals, giving a tight, fully-enclosed
+  # arena perfect as a small server-selector hub.
+  compact: true
+
 # Labels shown on the standing signs CampusLobby places near each
 # landmark. Purely cosmetic signage — CampusLobby does not handle
 # clicks or teleportation itself. Pair these labels with matching
@@ -71,9 +77,13 @@ signs:
   union-facade: "Talley Student Union"
   library-facade: "D. H. Hill Jr. Library"
   portals: "Nether Portals"
-  portal-left: "Resource Realm"
+  portal-north: "Survival World"
+  portal-west: "Resource Realm"
+  portal-east: "Minigames Hub"
   portal-center: "Survival World"
+  portal-left: "Resource Realm"
   portal-right: "Minigames Hub"
+
 
 
 

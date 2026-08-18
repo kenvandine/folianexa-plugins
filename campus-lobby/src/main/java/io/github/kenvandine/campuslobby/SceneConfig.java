@@ -16,7 +16,8 @@ public record SceneConfig(
         Colors colors,
         Map<String, String> signLabels,
         Clear clear,
-        int borderMargin
+        int borderMargin,
+        boolean compact  // NEW: when true, generate a compact 15x15x15 Wolfpack lobby
 ) {
 
     public record Include(
@@ -95,7 +96,46 @@ public record SceneConfig(
                 ),
                 Map.of(),
                 new Clear(6, 8),
-                4
+                4,
+                false  // compact = false
         );
+    }
+
+    /**
+     * Compact 15x15x15 mode defaults: a fully enclosed Wolfpack-themed arena
+     * with 4 walls, ceiling, and 3 Nether portals. plazaRadius=7 gives
+     * -7..7 = 15 wide in both X and Z.
+     */
+    public static SceneConfig compactDefaults() {
+        return new SceneConfig(
+                7,   // plazaRadius: gives -7..7 = 15 wide
+                10,
+                new Include(false, false, false, false, false, true, true), // only enclosure + portals
+                new Colors(
+                        "RED_CONCRETE", "WHITE_CONCRETE", "BLACK_CONCRETE",
+                        "RED_CONCRETE", "BLACK_CONCRETE", "BLACK_CONCRETE", "BLACK_CONCRETE",
+                        "RED_CONCRETE", "WHITE_CONCRETE", "BLACK_CONCRETE",
+                        "GRAY_CONCRETE", "LIGHT_GRAY_CONCRETE"
+                ),
+                Map.of(),
+                new Clear(2, 4),
+                2,
+                true  // compact = true
+        );
+    }
+
+    /**
+     * Backward-compatible 7-arg constructor (compact defaults to false).
+     */
+    public SceneConfig(
+            int plazaRadius,
+            int towerHeight,
+            Include include,
+            Colors colors,
+            Map<String, String> signLabels,
+            Clear clear,
+            int borderMargin
+    ) {
+        this(plazaRadius, towerHeight, include, colors, signLabels, clear, borderMargin, false);
     }
 }

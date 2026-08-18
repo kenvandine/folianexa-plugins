@@ -57,7 +57,8 @@ final class ConfigLoader {
                 config.getInt("scene.clear.height-above", defaults.clear().heightAbove())
         );
         int borderMargin = config.getInt("scene.border-margin", defaults.borderMargin());
+        boolean compact = config.getBoolean("scene.compact", false);
 
-        return new SceneConfig(plazaRadius, towerHeight, include, colors, signLabels, clear, borderMargin);
+        return new SceneConfig(plazaRadius, towerHeight, include, colors, signLabels, clear, borderMargin, compact);
     }
 }

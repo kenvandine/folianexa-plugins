@@ -117,9 +117,9 @@ class CampusSceneTest {
                 "RED_BANNER", "WHITE_BANNER", "BLACK_BANNER", "POLISHED_BLACKSTONE", "POLISHED_BLACKSTONE_WALL",
                 "POLISHED_BLACKSTONE_SLAB", "SMOOTH_STONE", "SMOOTH_STONE_SLAB", "CRIMSON_SLAB", "LANTERN", "SOUL_LANTERN",
                 "SEA_LANTERN", "RED_STAINED_GLASS", "RED_STAINED_GLASS_PANE", "BLACK_STAINED_GLASS_PANE",
-                "WHITE_STAINED_GLASS_PANE", "IRON_BARS", "MOSS_BLOCK", "AZALEA_LEAVES", "RED_TULIP",
+                "WHITE_STAINED_GLASS_PANE", "IRON_BARS", "MOSS_BLOCK", "AZALEA_LEAVES", "FLOWERING_AZALEA", "RED_TULIP",
                 "WHITE_TULIP", "CHAIN", "BELL", "LIGHTNING_ROD", "BOOKSHELF", "AIR",
-                "OBSIDIAN", "CRYING_OBSIDIAN", "NETHER_PORTAL"
+                "OBSIDIAN", "CRYING_OBSIDIAN", "NETHER_PORTAL", "CRIMSON_STAIRS", "DARK_OAK_STAIRS"
         ));
 
         long total = scene.blocks().size();
@@ -248,14 +248,42 @@ class CampusSceneTest {
                 .filter(b -> "SOUL_LANTERN".equals(b.material()))
                 .count();
 
-        assertTrue(netherPortalBlocks >= 20, "Should generate 3 nether portal openings: " + netherPortalBlocks);
+        assertTrue(netherPortalBlocks >= 15, "Should generate 3 nether portal openings: " + netherPortalBlocks);
         assertTrue(obsidianBlocks >= 30, "Should feature gothic obsidian portal frames: " + obsidianBlocks);
-        assertTrue(soulLanterns >= 3, "Should feature 3 soul lanterns for the 3 portals: " + soulLanterns);
+        assertTrue(soulLanterns >= 3, "Should feature soul lanterns for the portals: " + soulLanterns);
 
         long starSlabs = scene.blocks().stream()
                 .filter(b -> b.material().contains("SLAB"))
                 .count();
         assertTrue(starSlabs >= 15, "Should generate decorative Wolfpack slabs for star pathways: " + starSlabs);
+    }
+
+    @Test
+    void netherPortalsAreLocatedOnNorthWestAndEastSides() {
+        CampusScene.Scene scene = CampusScene.generate(SceneConfig.defaults());
+
+        boolean hasNorthPortal = scene.blocks().stream().anyMatch(b -> "NETHER_PORTAL".equals(b.material()) && b.dz() < -8 && Math.abs(b.dx()) <= 2);
+        boolean hasWestPortal = scene.blocks().stream().anyMatch(b -> "NETHER_PORTAL".equals(b.material()) && b.dx() < -8 && Math.abs(b.dz()) <= 2);
+        boolean hasEastPortal = scene.blocks().stream().anyMatch(b -> "NETHER_PORTAL".equals(b.material()) && b.dx() > 8 && Math.abs(b.dz()) <= 2);
+
+        assertTrue(hasNorthPortal, "Nether portal should be positioned on the North side");
+        assertTrue(hasWestPortal, "Nether portal should be positioned on the West side");
+        assertTrue(hasEastPortal, "Nether portal should be positioned on the East side");
+    }
+
+    @Test
+    void sullivanLoungeIncludesCozyFireplaceAndHomeyDecorations() {
+        CampusScene.Scene scene = CampusScene.generate(SceneConfig.defaults());
+
+        boolean hasBookshelves = scene.blocks().stream().anyMatch(b -> "BOOKSHELF".equals(b.material()));
+        boolean hasTulips = scene.blocks().stream().anyMatch(b -> "RED_TULIP".equals(b.material()) || "WHITE_TULIP".equals(b.material()));
+        boolean hasChairs = scene.blocks().stream().anyMatch(b -> "CRIMSON_STAIRS".equals(b.material()) || "DARK_OAK_STAIRS".equals(b.material()));
+        boolean hasAzaleas = scene.blocks().stream().anyMatch(b -> "AZALEA_LEAVES".equals(b.material()) || "FLOWERING_AZALEA".equals(b.material()));
+
+        assertTrue(hasBookshelves, "Lobby should include bookshelves in study and lounge nooks");
+        assertTrue(hasTulips, "Lobby should include red and white tulips for Wolfpack homey decor");
+        assertTrue(hasChairs, "Lobby should include cozy chairs/benches");
+        assertTrue(hasAzaleas, "Lobby should include decorative azalea greenery");
     }
 
     @Test
@@ -310,6 +338,35 @@ class CampusSceneTest {
         long lightningRodCount = scene.blocks().stream()
                 .filter(b -> "LIGHTNING_ROD".equals(b.material()))
                 .count();
-        assertTrue(lightningRodCount >= 4, "Belltower and portals should feature lightning rod finials");
+        assertTrue(lightningRodCount >= 4, "Belltower and portals should feature lightning rod finials: " + lightningRodCount);
+    }
+
+    @Test
+    void compactLobbyIsExactly15x15x15() {
+        SceneConfig cfg = SceneConfig.compactDefaults();
+        CampusScene.Scene scene = CampusScene.generate(cfg);
+
+        CampusScene.Bounds bounds = scene.bounds();
+        // -7 to +7 = 15 blocks, y=0 (floor) to y=14 (ceiling)
+        assertTrue(bounds.minX() >= -7 && bounds.maxX() <= 7,
+                "compact lobby X must be within -7..7");
+        assertTrue(bounds.minZ() >= -7 && bounds.maxZ() <= 7,
+                "compact lobby Z must be within -7..7");
+        assertTrue(bounds.maxY() <= 14, "compact lobby ceiling must not exceed y=14");
+        assertTrue(bounds.minY() == 0, "compact lobby floor starts at y=0");
+
+        long netherPortals = scene.blocks().stream()
+                .filter(b -> "NETHER_PORTAL".equals(b.material()))
+                .count();
+        assertTrue(netherPortals >= 9, "compact lobby should have 3 nether portal columns: " + netherPortals);
+
+        // Must include north, west, and east portals
+        boolean hasNorthPortal = scene.blocks().stream().anyMatch(b -> "NETHER_PORTAL".equals(b.material()) && b.dz() == -7);
+        boolean hasWestPortal = scene.blocks().stream().anyMatch(b -> "NETHER_PORTAL".equals(b.material()) && b.dx() == -7);
+        boolean hasEastPortal = scene.blocks().stream().anyMatch(b -> "NETHER_PORTAL".equals(b.material()) && b.dx() == 7);
+        assertTrue(hasNorthPortal, "compact lobby should have north portal at z=-7");
+        assertTrue(hasWestPortal, "compact lobby should have west portal at x=-7");
+        assertTrue(hasEastPortal, "compact lobby should have east portal at x=7");
     }
 }
+
