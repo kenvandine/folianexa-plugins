@@ -105,17 +105,17 @@ class CampusSceneTest {
         wolfpackColors.add(cfg.colors().brickTrim());
         wolfpackColors.add(cfg.colors().glass());
         wolfpackColors.add(cfg.colors().roof());
-        wolfpackColors.add(cfg.colors().clayRed());
-        wolfpackColors.add(cfg.colors().clayWhite());
-        wolfpackColors.add(cfg.colors().clayBlack());
-        wolfpackColors.add(cfg.colors().clayGray());
-        wolfpackColors.add(cfg.colors().clayNormal());
+        wolfpackColors.add(cfg.colors().concreteRed());
+        wolfpackColors.add(cfg.colors().concreteWhite());
+        wolfpackColors.add(cfg.colors().concreteBlack());
+        wolfpackColors.add(cfg.colors().concreteGray());
+        wolfpackColors.add(cfg.colors().concreteLightGray());
         wolfpackColors.addAll(List.of(
-                "RED_BANNER", "WHITE_BANNER", "POLISHED_BLACKSTONE", "POLISHED_BLACKSTONE_WALL",
+                "RED_BANNER", "WHITE_BANNER", "BLACK_BANNER", "POLISHED_BLACKSTONE", "POLISHED_BLACKSTONE_WALL",
                 "POLISHED_BLACKSTONE_SLAB", "SMOOTH_STONE", "SMOOTH_STONE_SLAB", "LANTERN",
                 "SEA_LANTERN", "RED_STAINED_GLASS", "RED_STAINED_GLASS_PANE", "BLACK_STAINED_GLASS_PANE",
-                "IRON_BARS", "MOSS_BLOCK", "AZALEA_LEAVES", "RED_TULIP", "WHITE_TULIP", "CHAIN", "BELL",
-                "LIGHTNING_ROD", "BOOKSHELF", "AIR"
+                "WHITE_STAINED_GLASS_PANE", "IRON_BARS", "MOSS_BLOCK", "AZALEA_LEAVES", "RED_TULIP",
+                "WHITE_TULIP", "CHAIN", "BELL", "LIGHTNING_ROD", "BOOKSHELF", "AIR"
         ));
 
         long total = scene.blocks().size();
@@ -123,7 +123,7 @@ class CampusSceneTest {
 
         assertTrue(total > 0);
         assertTrue(wolfpack * 100.0 / total > 90.0,
-                "expected the Wolfpack/clay palette to dominate, got " + wolfpack + "/" + total);
+                "expected the Wolfpack concrete palette to dominate, got " + wolfpack + "/" + total);
     }
 
     @Test
@@ -186,19 +186,23 @@ class CampusSceneTest {
     }
 
     @Test
-    void terracottaAndClayBlocksAreDominantInTheScene() {
+    void concreteBlocksAreDominantInTheScene() {
         CampusScene.Scene scene = CampusScene.generate(SceneConfig.defaults());
 
-        Set<String> clayMaterials = Set.of(
-                "RED_TERRACOTTA", "WHITE_TERRACOTTA", "BLACK_TERRACOTTA",
-                "GRAY_TERRACOTTA", "TERRACOTTA"
+        Set<String> concreteMaterials = Set.of(
+                "RED_CONCRETE", "WHITE_CONCRETE", "BLACK_CONCRETE",
+                "GRAY_CONCRETE", "LIGHT_GRAY_CONCRETE"
         );
 
-        long clayBlockCount = scene.blocks().stream()
-                .filter(b -> clayMaterials.contains(b.material()))
+        long concreteBlockCount = scene.blocks().stream()
+                .filter(b -> concreteMaterials.contains(b.material()))
                 .count();
 
-        assertTrue(clayBlockCount > 5000, "expected abundant terracotta/clay blocks throughout the scene, got: " + clayBlockCount);
+        assertTrue(concreteBlockCount > 4000, "expected abundant concrete blocks throughout the scene, got: " + concreteBlockCount);
+
+        // Verify no terracotta blocks are present
+        boolean hasTerracotta = scene.blocks().stream().anyMatch(b -> b.material().contains("TERRACOTTA"));
+        assertFalse(hasTerracotta, "expected no terracotta blocks in the scene");
     }
 
     @Test
@@ -233,7 +237,7 @@ class CampusSceneTest {
 
         // Ceiling should sit above belltower spire
         int maxY = scene.blocks().stream().mapToInt(BlockPlacement::dy).max().orElseThrow();
-        assertTrue(maxY >= cfg.towerHeight() + 14, "Enclosure ceiling should sit tall above the belltower");
+        assertTrue(maxY >= cfg.towerHeight() + 10, "Enclosure ceiling should sit tall above the belltower");
 
         // Four perimeter walls should exist along the boundaries
         int r = cfg.plazaRadius();
@@ -244,5 +248,20 @@ class CampusSceneTest {
 
         assertTrue(hasNorthWall && hasSouthWall && hasWestWall && hasEastWall,
                 "All 4 perimeter walls should be present in the enclosure");
+    }
+
+    @Test
+    void wolfpackDecorationsIncludeBannersAndBelltowerSpire() {
+        CampusScene.Scene scene = CampusScene.generate(SceneConfig.defaults());
+
+        long bannerCount = scene.blocks().stream()
+                .filter(b -> b.material().contains("BANNER"))
+                .count();
+        assertTrue(bannerCount >= 8, "Scene should contain multiple Wolfpack banners: " + bannerCount);
+
+        long lightningRodCount = scene.blocks().stream()
+                .filter(b -> "LIGHTNING_ROD".equals(b.material()))
+                .count();
+        assertTrue(lightningRodCount >= 5, "Belltower should feature corner pinnacles and spire rod");
     }
 }

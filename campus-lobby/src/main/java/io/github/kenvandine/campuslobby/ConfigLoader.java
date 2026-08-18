@@ -36,11 +36,11 @@ final class ConfigLoader {
                 config.getString("scene.colors.brick-trim", defaultColors.brickTrim()),
                 config.getString("scene.colors.glass", defaultColors.glass()),
                 config.getString("scene.colors.roof", defaultColors.roof()),
-                config.getString("scene.colors.clay-red", defaultColors.clayRed()),
-                config.getString("scene.colors.clay-white", defaultColors.clayWhite()),
-                config.getString("scene.colors.clay-black", defaultColors.clayBlack()),
-                config.getString("scene.colors.clay-gray", defaultColors.clayGray()),
-                config.getString("scene.colors.clay-normal", defaultColors.clayNormal())
+                config.getString("scene.colors.concrete-red", config.getString("scene.colors.clay-red", defaultColors.concreteRed())),
+                config.getString("scene.colors.concrete-white", config.getString("scene.colors.clay-white", defaultColors.concreteWhite())),
+                config.getString("scene.colors.concrete-black", config.getString("scene.colors.clay-black", defaultColors.concreteBlack())),
+                config.getString("scene.colors.concrete-gray", config.getString("scene.colors.clay-gray", defaultColors.concreteGray())),
+                config.getString("scene.colors.concrete-light-gray", config.getString("scene.colors.clay-normal", defaultColors.concreteLightGray()))
         );
 
         Map<String, String> signLabels = new LinkedHashMap<>();

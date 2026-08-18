@@ -40,16 +40,23 @@ public record SceneConfig(
             String brickTrim,
             String glass,
             String roof,
-            String clayRed,
-            String clayWhite,
-            String clayBlack,
-            String clayGray,
-            String clayNormal
+            String concreteRed,
+            String concreteWhite,
+            String concreteBlack,
+            String concreteGray,
+            String concreteLightGray
     ) {
         public Colors(String primaryRed, String white, String black, String brick, String brickTrim, String glass, String roof) {
             this(primaryRed, white, black, brick, brickTrim, glass, roof,
-                    "RED_TERRACOTTA", "WHITE_TERRACOTTA", "BLACK_TERRACOTTA", "GRAY_TERRACOTTA", "TERRACOTTA");
+                    "RED_CONCRETE", "WHITE_CONCRETE", "BLACK_CONCRETE", "GRAY_CONCRETE", "LIGHT_GRAY_CONCRETE");
         }
+
+        // Backwards compatibility helper getters for clay method names if any legacy code refers to them
+        public String clayRed() { return concreteRed; }
+        public String clayWhite() { return concreteWhite; }
+        public String clayBlack() { return concreteBlack; }
+        public String clayGray() { return concreteGray; }
+        public String clayNormal() { return concreteRed; }
     }
 
     /**
@@ -64,26 +71,26 @@ public record SceneConfig(
     /** Matches the shipped config.yml defaults exactly. */
     public static SceneConfig defaults() {
         return new SceneConfig(
-                48,
-                54,
+                32,
+                36,
                 new Include(true, true, true, true, true, true),
                 new Colors(
                         "RED_CONCRETE",
                         "WHITE_CONCRETE",
                         "BLACK_CONCRETE",
-                        "RED_TERRACOTTA",
-                        "TERRACOTTA",
+                        "RED_CONCRETE",
+                        "BLACK_CONCRETE",
                         "WHITE_STAINED_GLASS_PANE",
                         "POLISHED_BLACKSTONE",
-                        "RED_TERRACOTTA",
-                        "WHITE_TERRACOTTA",
-                        "BLACK_TERRACOTTA",
-                        "GRAY_TERRACOTTA",
-                        "TERRACOTTA"
+                        "RED_CONCRETE",
+                        "WHITE_CONCRETE",
+                        "BLACK_CONCRETE",
+                        "GRAY_CONCRETE",
+                        "LIGHT_GRAY_CONCRETE"
                 ),
                 Map.of(),
-                new Clear(12, 18),
-                10
+                new Clear(10, 14),
+                8
         );
     }
 }

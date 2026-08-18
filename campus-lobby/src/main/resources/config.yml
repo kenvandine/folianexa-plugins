@@ -6,11 +6,11 @@
 scene:
   # Plaza (the "Brickyard") half-width in blocks. The plaza is a square
   # centered on the build origin, (2 * plaza-radius + 1) blocks per side.
-  # 48 gives a grand ~97x97 campus square (2x the original size).
-  plaza-radius: 48
+  # 32 gives a grand, perfectly-proportioned ~65x65 enclosed campus arena.
+  plaza-radius: 32
 
   # Belltower height in blocks, measured from the plaza surface.
-  tower-height: 54
+  tower-height: 36
 
   # Which landmarks to place. All default on; turn any off to keep the
   # scene smaller/faster to place.
@@ -22,21 +22,21 @@ scene:
     library-facade: true
     enclosure: true
 
-  # Wolfpack color & colored clay palette. Values are org.bukkit.Material
-  # names — styled with NC State red/white/black and rich terracotta/colored clay.
+  # Wolfpack color palette. Styled with pure vibrant concrete in NC State
+  # Red, White, and Black for maximum contrast and bold spirit.
   colors:
     primary-red: RED_CONCRETE
     white: WHITE_CONCRETE
     black: BLACK_CONCRETE
-    brick: RED_TERRACOTTA
-    brick-trim: TERRACOTTA
+    brick: RED_CONCRETE
+    brick-trim: BLACK_CONCRETE
     glass: WHITE_STAINED_GLASS_PANE
     roof: POLISHED_BLACKSTONE
-    clay-red: RED_TERRACOTTA
-    clay-white: WHITE_TERRACOTTA
-    clay-black: BLACK_TERRACOTTA
-    clay-gray: GRAY_TERRACOTTA
-    clay-normal: TERRACOTTA
+    concrete-red: RED_CONCRETE
+    concrete-white: WHITE_CONCRETE
+    concrete-black: BLACK_CONCRETE
+    concrete-gray: GRAY_CONCRETE
+    concrete-light-gray: LIGHT_GRAY_CONCRETE
 
   # Clears leftover terrain (rogue trees, hills, floating debris, etc.)
   # from the build area before placing the scene. The clear always
@@ -45,17 +45,17 @@ scene:
   clear:
     # Horizontal margin (blocks) cleared beyond the generated scene's
     # own footprint.
-    padding: 12
+    padding: 10
     # Vertical margin (blocks) cleared above the tallest generated
-    # feature (the Belltower spire, by default).
-    height-above: 18
+    # feature (the enclosure ceiling, by default).
+    height-above: 14
 
   # Extra margin (blocks) beyond the cleared area before the world
   # border kicks in. The lobby world's border is set to hug the
   # cleared area (see clear above) plus this margin, so players can't
   # wander out of the lobby into the rest of the world — it's meant
   # purely as a jumping-off point to other worlds.
-  border-margin: 10
+  border-margin: 8
 
 # Labels shown on the standing signs CampusLobby places near each
 # landmark. Purely cosmetic signage — CampusLobby does not handle
@@ -69,4 +69,5 @@ signs:
   tunnel: "Free Expression Tunnel"
   union-facade: "Talley Student Union"
   library-facade: "D. H. Hill Jr. Library"
+
 
