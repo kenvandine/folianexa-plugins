@@ -23,17 +23,25 @@ final class ConfigLoader {
                 config.getBoolean("scene.include.wolf-statue", true),
                 config.getBoolean("scene.include.tunnel", true),
                 config.getBoolean("scene.include.union-facade", true),
-                config.getBoolean("scene.include.library-facade", true)
+                config.getBoolean("scene.include.library-facade", true),
+                config.getBoolean("scene.include.enclosure", true),
+                config.getBoolean("scene.include.portals", true)
         );
 
+        SceneConfig.Colors defaultColors = defaults.colors();
         SceneConfig.Colors colors = new SceneConfig.Colors(
-                config.getString("scene.colors.primary-red", defaults.colors().primaryRed()),
-                config.getString("scene.colors.white", defaults.colors().white()),
-                config.getString("scene.colors.black", defaults.colors().black()),
-                config.getString("scene.colors.brick", defaults.colors().brick()),
-                config.getString("scene.colors.brick-trim", defaults.colors().brickTrim()),
-                config.getString("scene.colors.glass", defaults.colors().glass()),
-                config.getString("scene.colors.roof", defaults.colors().roof())
+                config.getString("scene.colors.primary-red", defaultColors.primaryRed()),
+                config.getString("scene.colors.white", defaultColors.white()),
+                config.getString("scene.colors.black", defaultColors.black()),
+                config.getString("scene.colors.brick", defaultColors.brick()),
+                config.getString("scene.colors.brick-trim", defaultColors.brickTrim()),
+                config.getString("scene.colors.glass", defaultColors.glass()),
+                config.getString("scene.colors.roof", defaultColors.roof()),
+                config.getString("scene.colors.concrete-red", config.getString("scene.colors.clay-red", defaultColors.concreteRed())),
+                config.getString("scene.colors.concrete-white", config.getString("scene.colors.clay-white", defaultColors.concreteWhite())),
+                config.getString("scene.colors.concrete-black", config.getString("scene.colors.clay-black", defaultColors.concreteBlack())),
+                config.getString("scene.colors.concrete-gray", config.getString("scene.colors.clay-gray", defaultColors.concreteGray())),
+                config.getString("scene.colors.concrete-light-gray", config.getString("scene.colors.clay-normal", defaultColors.concreteLightGray()))
         );
 
         Map<String, String> signLabels = new LinkedHashMap<>();
@@ -49,7 +57,8 @@ final class ConfigLoader {
                 config.getInt("scene.clear.height-above", defaults.clear().heightAbove())
         );
         int borderMargin = config.getInt("scene.border-margin", defaults.borderMargin());
+        boolean compact = config.getBoolean("scene.compact", false);
 
-        return new SceneConfig(plazaRadius, towerHeight, include, colors, signLabels, clear, borderMargin);
+        return new SceneConfig(plazaRadius, towerHeight, include, colors, signLabels, clear, borderMargin, compact);
     }
 }

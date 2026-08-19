@@ -1,10 +1,16 @@
 # CampusLobby
 
-Procedurally decorates a FoliaNexa lobby world into an NC State
-Wolfpack-themed scene: a central brick "Brickyard" plaza, a Memorial
-Belltower centerpiece, a blocky wolf-mascot statue, a
-Free-Expression-Tunnel-style mural walkway, and stylized student-union /
-library building facades — all in Wolfpack red, white, and black.
+Procedurally decorates a FoliaNexa lobby world for the **Sullivan SMP**
+(survival Minecraft server for the Sullivan Residence Hall at NC State
+University, Go Wolfpack!) into an NC State Wolfpack-themed scene:
+- **Three Hyper-Fancy Nether Portals**: Located on the **North**, **West**, and **East** sides of the lobby with obsidian/crying obsidian arches, Wolfpack stepped crown pediments, soul lanterns, lightning rod finials, and star floor pathways.
+- **Sullivan Residence Hall & Talley Lounge**: A homey residence lounge on the South side featuring a cozy brick fireplace hearth, armchairs, study tables, potted red/white tulips, and bookshelves.
+- **The Brickyard Plaza**: Central red & black dyed concrete parquet paving with an inlaid Block 'S' medallion, howling wolf paw prints, and victory spirit beacons.
+- **Memorial Belltower**: Iconic belltower in the NW quadrant with rotunda victory beacon, 4-sided clock face, suspended bell, and victory spire.
+- **Wolf Mascot Statue**: Sculpted howling wolf atop a tiered pedestal in the NE quadrant.
+- **Free Expression Tunnel & D.H. Hill Library**: Colorful graffiti mural walkway in the SW and collegiate study nook in the SE.
+- **Enclosure & Vaulted Ceiling**: 4 solid concrete walls with detailed pixel art banners ("NC STATE", "WOLFPACK", "1887", "GO PACK") and an organic coffered vaulted concrete ceiling with chandeliers.
+
 
 This is an original, from-scratch plugin — not a port or reimplementation
 of any existing mod/plugin. It's a stylized, iconic representation of a

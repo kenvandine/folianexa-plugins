@@ -6,10 +6,11 @@
 scene:
   # Plaza (the "Brickyard") half-width in blocks. The plaza is a square
   # centered on the build origin, (2 * plaza-radius + 1) blocks per side.
-  plaza-radius: 24
+  # 15 gives an ultra-compact, high-intensity ~31x31 enclosed campus lobby arena.
+  plaza-radius: 15
 
   # Belltower height in blocks, measured from the plaza surface.
-  tower-height: 34
+  tower-height: 18
 
   # Which landmarks to place. All default on; turn any off to keep the
   # scene smaller/faster to place.
@@ -19,17 +20,24 @@ scene:
     tunnel: true
     union-facade: true
     library-facade: true
+    enclosure: true
+    portals: true
 
-  # Wolfpack color palette. Values are org.bukkit.Material names — swap
-  # any of these (e.g. to wool instead of concrete) to taste.
+  # Wolfpack color palette. Styled with pure vibrant dyed concrete in NC State
+  # Red, White, and Black for maximum contrast and bold spirit.
   colors:
     primary-red: RED_CONCRETE
     white: WHITE_CONCRETE
     black: BLACK_CONCRETE
-    brick: BRICKS
-    brick-trim: CHISELED_BRICKS
-    glass: WHITE_STAINED_GLASS_PANE
-    roof: BLACKSTONE
+    brick: RED_CONCRETE
+    brick-trim: BLACK_CONCRETE
+    glass: BLACK_CONCRETE
+    roof: BLACK_CONCRETE
+    concrete-red: RED_CONCRETE
+    concrete-white: WHITE_CONCRETE
+    concrete-black: BLACK_CONCRETE
+    concrete-gray: GRAY_CONCRETE
+    concrete-light-gray: LIGHT_GRAY_CONCRETE
 
   # Clears leftover terrain (rogue trees, hills, floating debris, etc.)
   # from the build area before placing the scene. The clear always
@@ -38,17 +46,23 @@ scene:
   clear:
     # Horizontal margin (blocks) cleared beyond the generated scene's
     # own footprint.
-    padding: 10
+    padding: 6
     # Vertical margin (blocks) cleared above the tallest generated
-    # feature (the Belltower spire, by default).
-    height-above: 16
+    # feature (the enclosure ceiling, by default).
+    height-above: 8
 
   # Extra margin (blocks) beyond the cleared area before the world
   # border kicks in. The lobby world's border is set to hug the
   # cleared area (see clear above) plus this margin, so players can't
   # wander out of the lobby into the rest of the world — it's meant
   # purely as a jumping-off point to other worlds.
-  border-margin: 8
+  border-margin: 4
+
+  # Set to true to build a compact 15x15x15 Wolfpack lobby instead of
+  # the full-size campus scene. This enforces plaza-radius=7 and enables
+  # only the enclosure and nether portals, giving a tight, fully-enclosed
+  # arena perfect as a small server-selector hub.
+  compact: true
 
 # Labels shown on the standing signs CampusLobby places near each
 # landmark. Purely cosmetic signage — CampusLobby does not handle
@@ -62,3 +76,14 @@ signs:
   tunnel: "Free Expression Tunnel"
   union-facade: "Talley Student Union"
   library-facade: "D. H. Hill Jr. Library"
+  portals: "Nether Portals"
+  portal-north: "Survival World"
+  portal-west: "Resource Realm"
+  portal-east: "Minigames Hub"
+  portal-center: "Survival World"
+  portal-left: "Resource Realm"
+  portal-right: "Minigames Hub"
+
+
+
+
