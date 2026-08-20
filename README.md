@@ -19,6 +19,12 @@ to submit a plugin here for catalog review).
 | `folianexa-stats/` | Reports per-player kills/deaths/blocks-mined/playtime to mgmt's public player hub (PLAN.md §7A); softdepends on AuraSkills and Vault | `FoliaNexaStats` |
 | `hungergames/` | Configurable battle-royale minigame — queue-based arenas, shrinking world border, config-only maps and randomized "twists" | `HungerGames` |
 
+## Design docs
+
+| Directory | What |
+| --- | --- |
+| [`docs/phqen1x-rpg-suite/`](docs/phqen1x-rpg-suite/) | Project plan for **Phqen1xWorldEditCraft** (natural-language schematic generation via a local Lemonade Server) and **Phqen1xRPG** (LLM-authored, replayable RPG campaigns built on top of it). Design only — to be implemented by [Phqen1x](https://github.com/Phqen1x), likely in his own repos. |
+
 ## Adding a new plugin
 
 Each plugin is a standalone Gradle project in its own top-level
