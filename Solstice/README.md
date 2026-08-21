@@ -29,10 +29,10 @@ decisions, and how to verify all of it works on a real server.
 ## Building
 
 ```
-./mvnw package
+./gradlew build
 ```
 
-Produces `target/solstice-<version>.jar`, shaded (PacketEvents and PlaceholderAPI are **not**
+Produces `build/libs/Solstice-<version>.jar`, shaded (PacketEvents and PlaceholderAPI are **not**
 shaded in — they must be installed as their own plugins; Solstice only depends on their API at
 compile time).
 
@@ -113,8 +113,8 @@ These were cut deliberately to avoid shipping half-working versions of large, se
 To re-verify the no-BukkitScheduler guarantee after changes:
 
 ```
-./mvnw package
-unzip -p target/solstice-*.jar '*.class' | strings | grep -i bukkitscheduler
+./gradlew build
+unzip -p build/libs/Solstice-*.jar '*.class' | strings | grep -i bukkitscheduler
 ```
 
 Should print nothing.
@@ -131,7 +131,7 @@ especially before trusting the biome-color packet pipeline at all.
 
 1. Download a Folia server jar for your target version from
    <https://papermc.io/downloads/folia>, accept the EULA, and get it booting standalone first.
-2. `./mvnw package`, then copy `target/solstice-<version>.jar` into `plugins/`.
+2. `./gradlew build`, then copy `build/libs/Solstice-<version>.jar` into `plugins/`.
 3. Also install [PacketEvents](https://github.com/retrooper/packetevents) (needed for biome-color
    tests) and, optionally, PlaceholderAPI and a scoreboard/placeholder-viewer plugin.
 4. Use at least **two players** (or one player plus an alt account) so you can spread them across
@@ -152,7 +152,7 @@ especially before trusting the biome-color packet pipeline at all.
       shipped defaults.
 - [ ] `/solstice` with no args (and `/sol`) prints the subcommand help list.
 - [ ] Confirm the build still has no forbidden scheduler calls:
-      `unzip -p target/solstice-*.jar '*.class' | strings | grep -i bukkitscheduler` prints
+      `unzip -p build/libs/Solstice-*.jar '*.class' | strings | grep -i bukkitscheduler` prints
       nothing.
 
 ### 2. Calendar & time

@@ -18,6 +18,7 @@ to submit a plugin here for catalog review).
 | `campus-lobby/` | Procedurally builds an NC State Wolfpack-themed lobby scene (Belltower, Brickyard plaza, wolf statue, more) | `CampusLobby` |
 | `folianexa-stats/` | Reports per-player kills/deaths/blocks-mined/playtime to mgmt's public player hub (PLAN.md §7A); softdepends on AuraSkills and Vault | `FoliaNexaStats` |
 | `hungergames/` | Configurable battle-royale minigame — queue-based arenas, shrinking world border, config-only maps and randomized "twists" | `HungerGames` |
+| `Solstice/` | Folia-native seasons, calendar, and temperature plugin — biome recoloring, ambient visuals, seasonal events | `Solstice` |
 
 ## Adding a new plugin
 
@@ -54,3 +55,14 @@ exactly what happened before this convention existed: campus-lobby
 shipped three releases, `v0.0.1`–`v0.0.3`, all internally reporting
 `0.1.0`). Plain local `./gradlew build` with no property set still falls
 back to the hardcoded default, so day-to-day local builds are unaffected.
+
+### JDK version
+
+`.github/workflows/release.yml` builds every plugin under JDK 21 by
+default. A plugin that needs a newer JDK to actually *run* Gradle (e.g.
+`Solstice/`, whose `dev.folia:folia-api` dependency ships class files
+only a JDK 25+ javac can read off the classpath, even though Solstice's
+own compiled output still targets release 21) can opt in by committing a
+`.java-version` file in its own directory containing just the major
+version, e.g. `25`. Leave it unset unless you hit the same kind of
+classfile-version mismatch — most plugins should never need this.

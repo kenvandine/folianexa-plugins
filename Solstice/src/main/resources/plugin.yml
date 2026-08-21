@@ -1,5 +1,5 @@
 name: Solstice
-version: ${project.version}
+version: '${version}'
 main: io.github.kenvandine.solstice.Solstice
 api-version: '1.21'
 folia-supported: true

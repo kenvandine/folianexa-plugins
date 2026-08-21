@@ -17,11 +17,13 @@ name: Release a plugin
 #
 # Either way: builds with the plugin's own Gradle wrapper (so each
 # plugin's pinned Gradle version is what actually runs, not whatever this
-# workflow assumes), runs its test suite, and only proceeds to release if
-# that succeeds — see docs/plugin-dev/03-submitting-for-review.md in the
-# FoliaNexa repo for the self-review checklist this doesn't replace
-# (Folia-safe scheduling, a real test server smoke check, etc. are still
-# on you before tagging a release in the first place).
+# workflow assumes) under JDK 21 by default (or whatever JDK the plugin's
+# own <plugin>/.java-version opts into — see the "Select JDK" step), runs
+# its test suite, and only proceeds to release if that succeeds — see
+# docs/plugin-dev/03-submitting-for-review.md in the FoliaNexa repo for
+# the self-review checklist this doesn't replace (Folia-safe scheduling,
+# a real test server smoke check, etc. are still on you before tagging a
+# release in the first place).
 
 on:
   push:
@@ -73,10 +75,33 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
+      - name: Select JDK for this plugin
+        id: jdk
+        run: |
+          # Every plugin builds under JDK 21 by default. A plugin can
+          # instead opt into a newer JDK to actually *run* Gradle by
+          # committing a `.java-version` file in its own directory
+          # containing just the major version (e.g. "25") — see
+          # Solstice/.java-version for why Solstice needs this: its
+          # dev.folia:folia-api dependency ships class files that only a
+          # JDK 25+ javac can read off the classpath, even though
+          # Solstice's own compiled output still targets release 21 (see
+          # the comment above `tasks.withType<JavaCompile>` in
+          # Solstice/build.gradle.kts). Older pinned Gradle wrappers (e.g.
+          # Gradle 8.x, used by some plugins here) fail outright under
+          # JDK 25, so this must stay per-plugin opt-in, not a global bump.
+          version_file="${{ steps.vars.outputs.plugin }}/.java-version"
+          if [ -f "$version_file" ]; then
+            jdk="$(tr -d '[:space:]' < "$version_file")"
+          else
+            jdk="21"
+          fi
+          echo "version=$jdk" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: ${{ steps.jdk.outputs.version }}
 
       - name: Build and test
         working-directory: ${{ steps.vars.outputs.plugin }}
