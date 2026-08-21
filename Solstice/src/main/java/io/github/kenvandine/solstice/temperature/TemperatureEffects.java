@@ -21,15 +21,21 @@ final class TemperatureEffects {
     private TemperatureEffects() {
     }
 
-    // Refresh potion effects for slightly longer than the recalculation interval so they don't
-    // flicker off between recalculations, without needing a duration exactly synced to the loop.
-    private static final int EFFECT_DURATION_TICKS = 80;
+    // Refresh potion effects for several recalculation intervals so they don't flicker off
+    // between recalculations, without needing a duration exactly synced to the loop.
+    private static final int EFFECT_DURATION_TICKS = 200;
 
     static void apply(Player player, TemperatureConfig cfg, Messages messages,
                        double airTemperature, double apparentTemperature, EffectRuntimeState state) {
         if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) {
             return;
         }
+
+        // Effects are only reapplied once they're close to expiring (see refreshIfNeeded), not
+        // on every recalculation: re-adding an already-active PotionEffect forces the client to
+        // briefly remove and reinstate the underlying attribute modifier (e.g. movement speed
+        // for Slowness), which reads as a stutter every time it happens.
+        int periodTicks = Math.max(1, cfg.recalculateIntervalSeconds * 20);
 
         String warningKey = null;
 
@@ -44,15 +50,15 @@ final class TemperatureEffects {
         }
 
         if (apparentTemperature <= cfg.slownessBelowC || apparentTemperature >= cfg.slownessAboveC) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, EFFECT_DURATION_TICKS, 0, true, false, true));
+            refreshIfNeeded(player, PotionEffectType.SLOWNESS, 0, periodTicks, true);
         }
 
         if (apparentTemperature <= cfg.hungerBelowC) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, EFFECT_DURATION_TICKS, 0, true, false, true));
+            refreshIfNeeded(player, PotionEffectType.HUNGER, 0, periodTicks, true);
         }
 
         if (cfg.comfortableEffect != null && apparentTemperature >= cfg.comfortableMinC && apparentTemperature <= cfg.comfortableMaxC) {
-            player.addPotionEffect(new PotionEffect(cfg.comfortableEffect, EFFECT_DURATION_TICKS, cfg.comfortableEffectAmplifier, true, false, false));
+            refreshIfNeeded(player, cfg.comfortableEffect, cfg.comfortableEffectAmplifier, periodTicks, false);
         }
 
         if (apparentTemperature >= cfg.burningAboveC) {
@@ -70,6 +76,17 @@ final class TemperatureEffects {
         }
 
         sendWarningIfChanged(player, messages, state, warningKey);
+    }
+
+    // Only calls addPotionEffect when the effect is missing, at a different amplifier, or close
+    // enough to expiring that it might lapse before the next recalculation checks again.
+    private static void refreshIfNeeded(Player player, PotionEffectType type, int amplifier, int periodTicks,
+                                         boolean showIcon) {
+        PotionEffect existing = player.getPotionEffect(type);
+        if (existing != null && existing.getAmplifier() == amplifier && existing.getDuration() > periodTicks) {
+            return;
+        }
+        player.addPotionEffect(new PotionEffect(type, EFFECT_DURATION_TICKS, amplifier, true, false, showIcon));
     }
 
     private static void sendWarningIfChanged(Player player, Messages messages, EffectRuntimeState state, String warningKey) {
