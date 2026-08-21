@@ -44,13 +44,21 @@ final class HttpMgmtClient {
     // report cycle.
     private final boolean enabled;
     private final String apiToken;
+    // Which world this JVM is running (resolved from FOLIA_WORLD_NAME —
+    // see FoliaNexaStatsPlugin#resolveWorldName) — sent on every report so
+    // mgmt can attribute this world's deltas separately from every other
+    // world's (routers/stats.py's whole reason for a per-world dimension
+    // on PlayerStat: this plugin is default_for_all_worlds, so a player
+    // is routinely tracked by more than one world at once).
+    private final String worldName;
     private final HttpClient httpClient;
     private final Logger logger;
 
-    HttpMgmtClient(String baseUrl, String apiToken, Logger logger) {
+    HttpMgmtClient(String baseUrl, String apiToken, String worldName, Logger logger) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.enabled = !baseUrl.isBlank();
         this.apiToken = apiToken;
+        this.worldName = worldName;
         // HTTP_1_1 explicitly: java.net.http.HttpClient defaults to
         // preferring HTTP/2, which over plaintext means attempting an
         // "Upgrade: h2c" handshake (RFC 7540 §3.2) on every request.
@@ -90,6 +98,7 @@ final class HttpMgmtClient {
             playersJson.add(entry);
         }
         Map<String, Object> body = new LinkedHashMap<>();
+        body.put("world", worldName);
         body.put("players", playersJson);
         String json = MiniJson.write(body);
 

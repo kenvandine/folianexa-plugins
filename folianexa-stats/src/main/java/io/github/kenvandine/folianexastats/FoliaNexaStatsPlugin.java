@@ -27,6 +27,7 @@ public final class FoliaNexaStatsPlugin extends JavaPlugin {
     private AuraSkillsIntegration auraSkills;
     private VaultEconomyIntegration vaultEconomy;
     private Object reportTaskHandle;
+    private String worldName;
 
     @Override
     public void onEnable() {
@@ -34,6 +35,7 @@ public final class FoliaNexaStatsPlugin extends JavaPlugin {
         tracker = new StatsTracker();
         auraSkills = new AuraSkillsIntegration(getLogger());
         vaultEconomy = new VaultEconomyIntegration(getLogger());
+        worldName = resolveWorldName();
         buildMgmtClient();
 
         getServer().getPluginManager().registerEvents(new FoliaNexaStatsListener(this), this);
@@ -64,7 +66,33 @@ public final class FoliaNexaStatsPlugin extends JavaPlugin {
         if (apiToken.isBlank()) {
             getLogger().warning("mgmt-api-token is not set in config.yml — stats reports will be rejected (401) until it is.");
         }
-        mgmtClient = new HttpMgmtClient(baseUrl, apiToken, getLogger());
+        mgmtClient = new HttpMgmtClient(baseUrl, apiToken, worldName, getLogger());
+    }
+
+    /**
+     * folia-nexa-node sets FOLIA_WORLD_NAME on this JVM's environment
+     * (see runner.py in the FoliaNexa repo) so every report can be
+     * attributed to the specific world it came from — this plugin is
+     * default_for_all_worlds, so a player is routinely tracked by more
+     * than one world's independent plugin instance at once; without
+     * per-world attribution, mgmt has no way to tell those apart (see
+     * mgmt/src/folia_mgmt/routers/stats.py). Missing/blank means either
+     * a bare dev/test server (not run through folia-nexa-node at all) or
+     * a not-yet-upgraded node-agent build that predates this env var —
+     * reports still work either way, just bucketed together with any
+     * other unidentified world's contributions until node is upgraded
+     * too (mgmt sums per-world reports, so this degrades the same way a
+     * not-yet-upgraded plugin build does, not a hard failure).
+     */
+    private String resolveWorldName() {
+        String fromEnv = System.getenv("FOLIA_WORLD_NAME");
+        if (fromEnv != null && !fromEnv.isBlank()) {
+            return fromEnv;
+        }
+        getLogger().warning(
+                "FOLIA_WORLD_NAME is not set — this world's stats reports won't be attributed "
+                        + "separately from other unidentified worlds until folia-nexa-node is upgraded.");
+        return "unidentified-world";
     }
 
     void reloadPluginConfig() {

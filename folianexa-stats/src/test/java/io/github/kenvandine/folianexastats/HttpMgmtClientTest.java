@@ -36,6 +36,10 @@ class HttpMgmtClientTest {
                 "abc", "Steve", Map.of("kills", 5.0), Map.of("auraskills_power_level", 3.0), Map.of("2026-08-15", 600L));
     }
 
+    private HttpMgmtClient client(String baseUrl, String apiToken) {
+        return new HttpMgmtClient(baseUrl, apiToken, "overworld", Logger.getLogger("test"));
+    }
+
     @Test
     void reportStatsSendsExpectedJsonAndAuthHeaderAndReturnsTrueOn200() throws IOException, InterruptedException {
         AtomicReference<String> receivedBody = new AtomicReference<>();
@@ -56,7 +60,7 @@ class HttpMgmtClientTest {
         server.start();
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
 
-        HttpMgmtClient client = new HttpMgmtClient(baseUrl, "secret-token", Logger.getLogger("test"));
+        HttpMgmtClient client = client(baseUrl, "secret-token");
         boolean ok = client.reportStats(List.of(sampleReport()));
 
         // The HTTP call happens synchronously inside reportStats (this
@@ -66,6 +70,7 @@ class HttpMgmtClientTest {
         assertTrue(ok);
         assertEquals("/api/v1/stats/report", receivedPath.get());
         assertEquals("Bearer secret-token", receivedAuth.get());
+        assertTrue(receivedBody.get().contains("\"world\":\"overworld\""), receivedBody.get());
         assertTrue(receivedBody.get().contains("\"uuid\":\"abc\""), receivedBody.get());
         assertTrue(receivedBody.get().contains("\"stat_deltas\""), receivedBody.get());
         assertTrue(receivedBody.get().contains("\"kills\":5"), receivedBody.get());
@@ -87,7 +92,7 @@ class HttpMgmtClientTest {
         server.start();
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
 
-        HttpMgmtClient client = new HttpMgmtClient(baseUrl, "wrong-token", Logger.getLogger("test"));
+        HttpMgmtClient client = client(baseUrl, "wrong-token");
         boolean ok = client.reportStats(List.of(sampleReport()));
 
         assertFalse(ok, "caller must not confirm/clear deltas that mgmt actually rejected");
@@ -105,7 +110,7 @@ class HttpMgmtClientTest {
         server.start();
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
 
-        HttpMgmtClient client = new HttpMgmtClient(baseUrl, "token", Logger.getLogger("test"));
+        HttpMgmtClient client = client(baseUrl, "token");
         boolean ok = client.reportStats(List.of());
 
         assertFalse(called.get());
@@ -121,7 +126,7 @@ class HttpMgmtClientTest {
         // Without the enabled-guard, this would escape as an uncaught
         // exception on every report cycle instead of the "disabled until
         // configured" behavior the plugin warns about at startup.
-        HttpMgmtClient client = new HttpMgmtClient("", "token", Logger.getLogger("test"));
+        HttpMgmtClient client = client("", "token");
 
         boolean ok = client.reportStats(List.of(sampleReport()));
 
@@ -135,7 +140,7 @@ class HttpMgmtClientTest {
         // failure is, not escape as an uncaught IllegalArgumentException —
         // and unlike the blank case above, this one IS enabled and really
         // did fail to send, so the caller must not confirm the deltas.
-        HttpMgmtClient client = new HttpMgmtClient("mgmt.internal:8443", "token", Logger.getLogger("test"));
+        HttpMgmtClient client = client("mgmt.internal:8443", "token");
 
         boolean ok = client.reportStats(List.of(sampleReport()));
 

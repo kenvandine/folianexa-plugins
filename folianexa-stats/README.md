@@ -55,6 +55,15 @@ in the `FoliaNexa` repo for how the mgmt-side API token is issued
 | `mgmt-api-token` | *(empty)* | Operator-role API token — required, reports 401 without one. |
 | `report-interval-seconds` | `60` | How often all currently-known players' stats are batched and posted. |
 
+Not in `config.yml`, but also relevant: the `FOLIA_WORLD_NAME` environment
+variable, set by `folia-nexa-node` on the JVM this plugin runs in
+(`runner.py` in the `FoliaNexa` repo) so mgmt can attribute each report
+to the specific world it came from — see `StatsTracker`'s class docs for
+why that matters. Running this jar outside of `folia-nexa-node` (e.g. a
+bare local test server per the section above) means that variable is
+unset; the plugin still works, just logs a warning and falls back to a
+shared `unidentified-world` bucket rather than a per-world one.
+
 ## Usage
 
 - `/foliaNexaStats reload` — reloads `config.yml` without a restart.
