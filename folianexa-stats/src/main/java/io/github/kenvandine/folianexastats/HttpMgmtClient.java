@@ -37,12 +37,22 @@ final class HttpMgmtClient {
     }
 
     private final String baseUrl;
+    // A blank or malformed baseUrl (unset config, typo missing "http://",
+    // stray whitespace, ...) makes URI.create()/HttpRequest.Builder#uri()
+    // throw IllegalArgumentException — synchronously, before either method
+    // below ever reaches its try block. Short-circuiting on this instead of
+    // attempting the request keeps that class of misconfiguration inside
+    // this class's "log and swallow, never throw" contract (see class docs)
+    // rather than letting it escape as an uncaught exception on every fetch
+    // and every report cycle.
+    private final boolean enabled;
     private final String apiToken;
     private final HttpClient httpClient;
     private final Logger logger;
 
     HttpMgmtClient(String baseUrl, String apiToken, Logger logger) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        this.enabled = !baseUrl.isBlank();
         this.apiToken = apiToken;
         // HTTP_1_1 explicitly: java.net.http.HttpClient defaults to
         // preferring HTTP/2, which over plaintext means attempting an
@@ -72,12 +82,13 @@ final class HttpMgmtClient {
      * — returns.
      */
     Optional<PlayerBaseline> fetchPlayer(String uuid) {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/api/v1/public/players/" + uuid))
-                .timeout(Duration.ofSeconds(10))
-                .GET()
-                .build();
+        if (!enabled) return Optional.empty();
         try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/v1/public/players/" + uuid))
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 404) {
                 return Optional.of(PlayerBaseline.ZERO);
@@ -96,7 +107,7 @@ final class HttpMgmtClient {
                     numberOrZero(stats.get("blocks_mined")),
                     numberOrZero(stats.get("playtime_seconds_total"))
             ));
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException | IllegalArgumentException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             logger.log(Level.WARNING, "fetching baseline for " + uuid + " failed", e);
             return Optional.empty();
@@ -108,7 +119,7 @@ final class HttpMgmtClient {
     }
 
     void reportStats(List<StatsTracker.PlayerReport> reports) {
-        if (reports.isEmpty()) return;
+        if (reports.isEmpty() || !enabled) return;
 
         List<Object> playersJson = new ArrayList<>();
         for (StatsTracker.PlayerReport report : reports) {
@@ -123,19 +134,19 @@ final class HttpMgmtClient {
         body.put("players", playersJson);
         String json = MiniJson.write(body);
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/api/v1/stats/report"))
-                .timeout(Duration.ofSeconds(15))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + apiToken)
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
         try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/v1/stats/report"))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + apiToken)
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
                 logger.warning("stats report rejected: HTTP " + response.statusCode() + " " + response.body());
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException | IllegalArgumentException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             logger.log(Level.WARNING, "stats report failed", e);
         }

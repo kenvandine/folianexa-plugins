@@ -138,4 +138,33 @@ class HttpMgmtClientTest {
 
         assertFalse(called.get());
     }
+
+    @Test
+    void blankBaseUrlDoesNotThrowOnFetchOrReport() {
+        // A blank mgmt-base-url (unset config) must not attempt a
+        // request at all — URI.create("" + path) is a relative URI, and
+        // HttpRequest.Builder#uri() throws IllegalArgumentException for
+        // that synchronously, before this class's try/catch even starts.
+        // Without the enabled-guard, this would escape as an uncaught
+        // exception on every join and every report cycle instead of the
+        // "disabled until configured" behavior the plugin warns about at
+        // startup.
+        HttpMgmtClient client = new HttpMgmtClient("", "token", Logger.getLogger("test"));
+
+        assertFalse(client.fetchPlayer("abc").isPresent());
+
+        StatsTracker.PlayerReport report = new StatsTracker.PlayerReport(
+                "abc", "Steve", Map.of("kills", 5.0), Map.of());
+        client.reportStats(List.of(report)); // must return quietly, not throw
+    }
+
+    @Test
+    void malformedBaseUrlDoesNotThrow() {
+        // Any other syntactically-broken value (missing scheme, stray
+        // whitespace, ...) must be swallowed the same way a network
+        // failure is, not escape as an uncaught IllegalArgumentException.
+        HttpMgmtClient client = new HttpMgmtClient("mgmt.internal:8443", "token", Logger.getLogger("test"));
+
+        assertFalse(client.fetchPlayer("abc").isPresent());
+    }
 }
