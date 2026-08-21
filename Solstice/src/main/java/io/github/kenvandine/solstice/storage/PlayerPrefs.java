@@ -3,8 +3,8 @@ package io.github.kenvandine.solstice.storage;
 /** Immutable per-player toggle preferences (PLAN.md §3.7). Replaced wholesale on each toggle. */
 public record PlayerPrefs(boolean temperatureDisplay, boolean seasonColors, boolean seasonParticles, boolean fahrenheit) {
 
-    public static PlayerPrefs defaults() {
-        return new PlayerPrefs(true, true, true, false);
+    public static PlayerPrefs defaults(boolean fahrenheit) {
+        return new PlayerPrefs(true, true, true, fahrenheit);
     }
 
     public PlayerPrefs withTemperatureDisplay(boolean v) {

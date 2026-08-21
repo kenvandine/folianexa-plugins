@@ -21,7 +21,7 @@ public class DayChangeEvent extends Event {
     private final SeasonDate to;
 
     public DayChangeEvent(World world, SeasonDate from, SeasonDate to) {
-        super(true);
+        super(false);
         this.world = world;
         this.from = from;
         this.to = to;

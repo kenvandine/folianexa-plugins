@@ -33,6 +33,8 @@ biome:
 
 temperature:
   action-bar: "%icon% %temperature%"
+  boss-bar: "%icon% %temperature% &7| &f%season% &7| &f%time%"
+  side-bar-title: "&b&lSolstice"
   warning-freezing: "&b&lYou are freezing!"
   warning-hot: "&c&lYou are overheating!"
   warning-burning: "&4&lYou are burning up!"

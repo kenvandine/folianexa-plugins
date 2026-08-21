@@ -1,8 +1,8 @@
 package io.github.kenvandine.solstice.storage;
 
+import io.github.kenvandine.solstice.Solstice;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,10 +17,12 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class PlayerDataStore {
 
+    private final Solstice plugin;
     private final File file;
     private final Map<UUID, PlayerPrefs> cache = new ConcurrentHashMap<>();
 
-    public PlayerDataStore(Plugin plugin) {
+    public PlayerDataStore(Solstice plugin) {
+        this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "playerdata.yml");
     }
 
@@ -38,7 +40,7 @@ public final class PlayerDataStore {
                         section.getBoolean("temperature-display", true),
                         section.getBoolean("season-colors", true),
                         section.getBoolean("season-particles", true),
-                        section.getBoolean("fahrenheit", false)
+                        section.getBoolean("fahrenheit", plugin.config().temperature().defaultFahrenheit)
                 ));
             } catch (IllegalArgumentException ignored) {
             }
@@ -63,7 +65,7 @@ public final class PlayerDataStore {
     }
 
     public PlayerPrefs get(UUID playerId) {
-        return cache.computeIfAbsent(playerId, id -> PlayerPrefs.defaults());
+        return cache.computeIfAbsent(playerId, id -> PlayerPrefs.defaults(plugin.config().temperature().defaultFahrenheit));
     }
 
     public void set(UUID playerId, PlayerPrefs prefs) {

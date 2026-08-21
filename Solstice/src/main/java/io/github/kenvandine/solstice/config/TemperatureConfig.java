@@ -41,6 +41,9 @@ public final class TemperatureConfig {
     public final boolean defaultFahrenheit;
     public final Set<World.Environment> disabledDimensions;
     public final boolean actionBar;
+    public final boolean bossBar;
+    public final boolean bossBarPadding;
+    public final boolean sideBar;
     public final boolean chatWarnings;
 
     public final Map<Season, Range> seasonBase;
@@ -69,6 +72,7 @@ public final class TemperatureConfig {
 
     public final int nearbyBlocksRadius;
     public final List<NearbyBlockRule> nearbyBlockRules;
+    public final double nearbyBlocksCap;
 
     public final double armorLeatherPerPiece;
     public final double armorLeatherFullSet;
@@ -106,6 +110,9 @@ public final class TemperatureConfig {
         this.defaultFahrenheit = b.defaultFahrenheit;
         this.disabledDimensions = b.disabledDimensions;
         this.actionBar = b.actionBar;
+        this.bossBar = b.bossBar;
+        this.bossBarPadding = b.bossBarPadding;
+        this.sideBar = b.sideBar;
         this.chatWarnings = b.chatWarnings;
         this.seasonBase = b.seasonBase;
         this.weatherClear = b.weatherClear;
@@ -127,6 +134,7 @@ public final class TemperatureConfig {
         this.sprintingMaxModifier = b.sprintingMaxModifier;
         this.nearbyBlocksRadius = b.nearbyBlocksRadius;
         this.nearbyBlockRules = b.nearbyBlockRules;
+        this.nearbyBlocksCap = b.nearbyBlocksCap;
         this.armorLeatherPerPiece = b.armorLeatherPerPiece;
         this.armorLeatherFullSet = b.armorLeatherFullSet;
         this.armorLeatherCap = b.armorLeatherCap;
@@ -161,6 +169,9 @@ public final class TemperatureConfig {
         boolean defaultFahrenheit;
         Set<World.Environment> disabledDimensions = EnumSet.noneOf(World.Environment.class);
         boolean actionBar;
+        boolean bossBar;
+        boolean bossBarPadding;
+        boolean sideBar;
         boolean chatWarnings;
         Map<Season, Range> seasonBase = new EnumMap<>(Season.class);
         double weatherClear, weatherRainOrSnow, weatherThunder;
@@ -173,6 +184,7 @@ public final class TemperatureConfig {
         double sprintingMaxModifier;
         int nearbyBlocksRadius;
         List<NearbyBlockRule> nearbyBlockRules = new ArrayList<>();
+        double nearbyBlocksCap;
         double armorLeatherPerPiece, armorLeatherFullSet, armorLeatherCap;
         double armorMetalPerPiece, armorMetalFullSet;
         double armorNetheritePerPiece, armorNetheriteFullSet;
@@ -201,6 +213,9 @@ public final class TemperatureConfig {
             }
         }
         b.actionBar = yaml.getBoolean("display.action-bar", true);
+        b.bossBar = yaml.getBoolean("display.boss-bar", false);
+        b.bossBarPadding = yaml.getBoolean("display.boss-bar-padding", false);
+        b.sideBar = yaml.getBoolean("display.side-bar", false);
         b.chatWarnings = yaml.getBoolean("display.chat-warnings", true);
 
         ConfigurationSection seasonBase = yaml.getConfigurationSection("season-base");
@@ -250,6 +265,7 @@ public final class TemperatureConfig {
 
         ConfigurationSection nearby = yaml.getConfigurationSection("nearby-blocks");
         b.nearbyBlocksRadius = nearby != null ? nearby.getInt("radius", 16) : 16;
+        b.nearbyBlocksCap = nearby != null ? nearby.getDouble("cap", 30) : 30;
         if (nearby != null) {
             addRule(b, nearby, "lava", Material.LAVA);
             addRule(b, nearby, "fire", Material.FIRE);

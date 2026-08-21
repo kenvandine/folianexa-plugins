@@ -19,9 +19,11 @@ import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 
 /**
  * Drives every managed world's calendar and clock on the global region scheduler — world time is
@@ -33,6 +35,7 @@ public final class CalendarEngine implements Listener {
     private final Solstice plugin;
     private final WorldDataStore dataStore;
     private final Map<UUID, AtomicReference<WorldSeasonState>> states = new ConcurrentHashMap<>();
+    private final Set<UUID> worldsWithoutClock = ConcurrentHashMap.newKeySet();
 
     public CalendarEngine(Solstice plugin) {
         this.plugin = plugin;
@@ -41,9 +44,11 @@ public final class CalendarEngine implements Listener {
 
     public void start() {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        for (World world : plugin.getServer().getWorlds()) {
-            initWorld(world);
-        }
+        plugin.schedulers().global(unused -> {
+            for (World world : plugin.getServer().getWorlds()) {
+                safeInitWorld(world);
+            }
+        });
         plugin.schedulers().globalRepeating(unused -> tickAll(), 1, 1);
     }
 
@@ -58,14 +63,25 @@ public final class CalendarEngine implements Listener {
 
     @EventHandler
     public void onWorldLoad(WorldLoadEvent event) {
-        initWorld(event.getWorld());
+        World world = event.getWorld();
+        plugin.schedulers().global(unused -> safeInitWorld(world));
     }
 
     @EventHandler
     public void onWorldUnload(WorldUnloadEvent event) {
+        worldsWithoutClock.remove(event.getWorld().getUID());
         AtomicReference<WorldSeasonState> ref = states.remove(event.getWorld().getUID());
         if (ref != null) {
             persist(event.getWorld(), ref.get());
+        }
+    }
+
+    private void safeInitWorld(World world) {
+        try {
+            initWorld(world);
+        } catch (RuntimeException e) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to initialize Solstice calendar state for world '" + world.getName() + "'", e);
         }
     }
 
@@ -132,7 +148,12 @@ public final class CalendarEngine implements Listener {
             if (ref == null) {
                 continue;
             }
-            tickWorld(world, ref, main, calendar);
+            try {
+                tickWorld(world, ref, main, calendar);
+            } catch (RuntimeException e) {
+                plugin.getLogger().log(Level.SEVERE,
+                        "Failed to tick Solstice calendar state for world '" + world.getName() + "'", e);
+            }
         }
     }
 
@@ -175,6 +196,9 @@ public final class CalendarEngine implements Listener {
     }
 
     private void applyRelativeTime(World world, WorldSeasonState state) {
+        if (worldsWithoutClock.contains(world.getUID())) {
+            return;
+        }
         long dayLength = Math.max(1, state.dayLengthTicks());
         long nightLength = Math.max(1, state.nightLengthTicks());
         long ticks = state.ticksIntoDayNight();
@@ -185,7 +209,14 @@ public final class CalendarEngine implements Listener {
         } else {
             relative = 12000 + (long) (((ticks - dayLength) / (double) nightLength) * 12000.0);
         }
-        world.setTime(relative);
+        try {
+            world.setTime(relative);
+        } catch (IllegalArgumentException e) {
+            worldsWithoutClock.add(world.getUID());
+            plugin.getLogger().info("World '" + world.getName()
+                    + "' has no day/night clock (e.g. the Nether) — Solstice will track its calendar/season "
+                    + "state but won't drive its time-of-day.");
+        }
     }
 
     // --- Admin mutators. All hop to the global region scheduler internally. ---

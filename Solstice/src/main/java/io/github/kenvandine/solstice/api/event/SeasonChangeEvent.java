@@ -25,7 +25,7 @@ public class SeasonChangeEvent extends Event implements Cancellable {
     private boolean cancelled;
 
     public SeasonChangeEvent(World world, Season oldSeason, Season newSeason) {
-        super(true);
+        super(false);
         this.world = world;
         this.oldSeason = oldSeason;
         this.newSeason = newSeason;

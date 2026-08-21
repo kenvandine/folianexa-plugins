@@ -3,11 +3,22 @@
 
 enabled: true
 recalculate-interval-seconds: 2
-default-unit: celsius   # celsius | fahrenheit
+default-unit: fahrenheit   # celsius | fahrenheit — unit new players see before they /togglefahrenheit
 disabled-dimensions: []  # e.g. [NETHER, THE_END]
 
 display:
-  action-bar: true
+  # Pick exactly one of these three; running more than one is redundant since they all show the
+  # same info. side-bar needs Scoreboard#getNewScoreboard, which some Folia builds don't
+  # implement (throws UnsupportedOperationException) — Solstice detects that at runtime and
+  # disables side-bar for the rest of the session with a log warning, but it won't work at all on
+  # a server where that's the case. boss-bar and action-bar both compete with other plugins/mods
+  # for the same fixed top-of-screen real estate (AuraSkills' own HUD, a minimap mod's compass
+  # strip, etc.) — if that's a problem on your server, side-bar is the only surface Solstice can
+  # fully own, provided your Folia build actually supports it.
+  action-bar: false
+  boss-bar: true
+  boss-bar-padding: true
+  side-bar: false
   chat-warnings: true
 
 season-base:
@@ -53,6 +64,10 @@ sprinting:
 
 nearby-blocks:
   radius: 16
+  # Clamp on the summed modifier below (symmetric, +/-). Without this, standing inside a large
+  # solid structure of one matched material (e.g. a big ice/packed-ice build) sums a modifier for
+  # every matching block within the radius sphere and can spike to physically absurd values.
+  cap: 30
   lava: 22
   fire: 16
   campfire: 15

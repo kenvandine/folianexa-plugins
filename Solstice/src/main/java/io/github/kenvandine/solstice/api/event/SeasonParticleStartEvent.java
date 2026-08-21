@@ -24,7 +24,7 @@ public class SeasonParticleStartEvent extends Event implements Cancellable {
     private boolean cancelled;
 
     public SeasonParticleStartEvent(Player player, Location location, String particleKind) {
-        super(true);
+        super(false);
         this.player = player;
         this.location = location;
         this.particleKind = particleKind;

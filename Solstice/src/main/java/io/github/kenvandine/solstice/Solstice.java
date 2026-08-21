@@ -61,8 +61,15 @@ public final class Solstice extends JavaPlugin {
         this.particleManager = new ParticleManager(this);
         particleManager.start();
 
-        this.biomeColorManager = new BiomeColorManager(this);
-        biomeColorManager.start();
+        if (configManager.main().biomeColorsEnabled()) {
+            if (getServer().getPluginManager().isPluginEnabled("packetevents")) {
+                this.biomeColorManager = new BiomeColorManager(this);
+                biomeColorManager.start();
+            } else {
+                getLogger().warning("visuals.biome-colors.enabled is true but the PacketEvents plugin "
+                        + "isn't installed/enabled — seasonal biome recoloring is disabled. See PLAN.md §6.");
+            }
+        }
 
         this.eventManager = new EventManager(this);
         eventManager.start();
@@ -98,6 +105,9 @@ public final class Solstice extends JavaPlugin {
         }
         if (biomeColorManager != null) {
             biomeColorManager.stop();
+        }
+        if (temperatureManager != null) {
+            temperatureManager.stop();
         }
         if (calendarEngine != null) {
             calendarEngine.stop();

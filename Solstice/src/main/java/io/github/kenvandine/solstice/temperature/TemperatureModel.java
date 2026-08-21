@@ -128,7 +128,7 @@ public final class TemperatureModel {
                 }
             }
         }
-        return total;
+        return Math.clamp(total, -cfg.nearbyBlocksCap, cfg.nearbyBlocksCap);
     }
 
     public static double armorModifier(TemperatureConfig cfg, org.bukkit.inventory.ItemStack[] armor) {
