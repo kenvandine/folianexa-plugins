@@ -1,0 +1,33 @@
+# Solstice calendar configuration.
+# Real-world structure (12 months, 365 days/year) counted in Minecraft days.
+# Day/night length is in ticks (20 ticks = 1 second, 24000 ticks = vanilla day).
+# Per-month lengths need not sum to 24000 — Solstice drives time itself.
+
+weekdays:
+  - Sunday
+  - Monday
+  - Tuesday
+  - Wednesday
+  - Thursday
+  - Friday
+  - Saturday
+
+months:
+  # name, days-in-month, day-length-ticks, night-length-ticks
+  - {name: January,   days: 31, day-ticks: 8400,  night-ticks: 15600}
+  - {name: February,  days: 28, day-ticks: 9600,  night-ticks: 14400}
+  - {name: March,     days: 31, day-ticks: 10800, night-ticks: 13200}
+  - {name: April,     days: 30, day-ticks: 12000, night-ticks: 12000}
+  - {name: May,       days: 31, day-ticks: 13200, night-ticks: 10800}
+  - {name: June,      days: 30, day-ticks: 14400, night-ticks: 9600}
+  - {name: July,      days: 31, day-ticks: 15600, night-ticks: 8400}
+  - {name: August,    days: 31, day-ticks: 14400, night-ticks: 9600}
+  - {name: September, days: 30, day-ticks: 13200, night-ticks: 10800}
+  - {name: October,   days: 31, day-ticks: 12000, night-ticks: 12000}
+  - {name: November,  days: 30, day-ticks: 10800, night-ticks: 13200}
+  - {name: December,  days: 31, day-ticks: 9600,  night-ticks: 14400}
+
+start:
+  year: 1
+  month: 3
+  day: 4

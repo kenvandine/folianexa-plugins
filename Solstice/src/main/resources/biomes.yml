@@ -1,0 +1,51 @@
+# Client-side seasonal biome recoloring (PacketEvents chunk rewrite, PLAN.md §6). World data is
+# never touched — colors are per-category, and any biome not explicitly categorized here is
+# classified automatically by its registry temperature value (PLAN.md §4, the Terralith approach).
+#
+# Categories match temperature.yml's biome-groups so hot/cold/frozen/jungle/savanna biomes look
+# consistent with how they feel. "temperate" is the fallback category (plains, forest, ocean, etc).
+#
+# Colors are hex RGB, applied per full season. Sub-season blending (PLAN.md §3.2) interpolates
+# between a season's colors and its neighbor's at runtime — this file only needs the four full-season
+# colors per category.
+
+categories:
+  temperate: [PLAINS, FOREST, FLOWER_FOREST, BIRCH_FOREST, DARK_FOREST, OCEAN, DEEP_OCEAN, RIVER,
+              BEACH, SWAMP, MANGROVE_SWAMP, SUNFLOWER_PLAINS, MEADOW, CHERRY_GROVE, STONY_SHORE]
+  hot: [BADLANDS, ERODED_BADLANDS, WOODED_BADLANDS, DESERT]
+  jungle: [JUNGLE, SPARSE_JUNGLE, BAMBOO_JUNGLE]
+  savanna: [SAVANNA, SAVANNA_PLATEAU, WINDSWEPT_SAVANNA]
+  cold: [WINDSWEPT_HILLS, WINDSWEPT_GRAVELLY_HILLS, TAIGA, OLD_GROWTH_PINE_TAIGA, OLD_GROWTH_SPRUCE_TAIGA, WINDSWEPT_FOREST]
+  frozen: [SNOWY_PLAINS, SNOWY_TAIGA, SNOWY_BEACH, SNOWY_SLOPES, FROZEN_PEAKS, FROZEN_OCEAN, FROZEN_RIVER, ICE_SPIKES, JAGGED_PEAKS, GROVE]
+
+colors:
+  temperate:
+    SPRING: {foliage: "#7CC66F", grass: "#8FE060", sky: "#8FC8E8", water: "#5FB8E8", water-fog: "#5FB8E8", fog: "#C9E8F5"}
+    SUMMER: {foliage: "#3D8E33", grass: "#4CAF2E", sky: "#7FC0EA", water: "#4FA8E0", water-fog: "#4FA8E0", fog: "#BEE3F2"}
+    AUTUMN: {foliage: "#C77B2E", grass: "#B89968", sky: "#A9A9A9", water: "#6E5A45", water-fog: "#6E5A45", fog: "#C4C4C4"}
+    WINTER: {foliage: "#B8C4B0", grass: "#C0CBB8", sky: "#D8E4EC", water: "#375A73", water-fog: "#375A73", fog: "#E8F0F5"}
+  hot:
+    SPRING: {foliage: "#8C8248", grass: "#9C9052", sky: "#A8D4EE", water: "#5FB8E8", water-fog: "#5FB8E8", fog: "#E8DFC0"}
+    SUMMER: {foliage: "#7A6A2E", grass: "#8A7A38", sky: "#A8D4EE", water: "#4FA8E0", water-fog: "#4FA8E0", fog: "#E8DFC0"}
+    AUTUMN: {foliage: "#8C6A34", grass: "#9C8542", sky: "#A9A9A9", water: "#6E5A45", water-fog: "#6E5A45", fog: "#C4C4C4"}
+    WINTER: {foliage: "#7A7A6A", grass: "#8A8A78", sky: "#D8E4EC", water: "#375A73", water-fog: "#375A73", fog: "#E8F0F5"}
+  jungle:
+    SPRING: {foliage: "#4FAE3A", grass: "#5FC048", sky: "#8FC8E8", water: "#5FB8E8", water-fog: "#5FB8E8", fog: "#C9E8F5"}
+    SUMMER: {foliage: "#2E8B1D", grass: "#38A824", sky: "#7FC0EA", water: "#4FA8E0", water-fog: "#4FA8E0", fog: "#BEE3F2"}
+    AUTUMN: {foliage: "#5E8B2E", grass: "#6C9A3C", sky: "#A9A9A9", water: "#6E5A45", water-fog: "#6E5A45", fog: "#C4C4C4"}
+    WINTER: {foliage: "#4A6B3E", grass: "#587A4A", sky: "#D8E4EC", water: "#375A73", water-fog: "#375A73", fog: "#E8F0F5"}
+  savanna:
+    SPRING: {foliage: "#9CAA4C", grass: "#AABE55", sky: "#A8D4EE", water: "#5FB8E8", water-fog: "#5FB8E8", fog: "#E4E4C0"}
+    SUMMER: {foliage: "#B4A83E", grass: "#C2B848", sky: "#A8D4EE", water: "#4FA8E0", water-fog: "#4FA8E0", fog: "#E4E4C0"}
+    AUTUMN: {foliage: "#A6842E", grass: "#B4923C", sky: "#A9A9A9", water: "#6E5A45", water-fog: "#6E5A45", fog: "#C4C4C4"}
+    WINTER: {foliage: "#8C8A6A", grass: "#9A9878", sky: "#D8E4EC", water: "#375A73", water-fog: "#375A73", fog: "#E8F0F5"}
+  cold:
+    SPRING: {foliage: "#6BAE6A", grass: "#7CC078", sky: "#8FC8E8", water: "#5FB8E8", water-fog: "#5FB8E8", fog: "#C9E8F5"}
+    SUMMER: {foliage: "#3D8E33", grass: "#4CAF2E", sky: "#7FC0EA", water: "#4FA8E0", water-fog: "#4FA8E0", fog: "#BEE3F2"}
+    AUTUMN: {foliage: "#8C9A6E", grass: "#9CA97E", sky: "#A9A9A9", water: "#6E5A45", water-fog: "#6E5A45", fog: "#C4C4C4"}
+    WINTER: {foliage: "#A8B8B0", grass: "#B4C4BC", sky: "#D8E4EC", water: "#375A73", water-fog: "#375A73", fog: "#E8F0F5"}
+  frozen:
+    SPRING: {foliage: "#8FB8B0", grass: "#9CC4BC", sky: "#C8E0EC", water: "#4A7A98", water-fog: "#4A7A98", fog: "#E0EEF2"}
+    SUMMER: {foliage: "#7CA8A0", grass: "#8AB4AC", sky: "#B8D8E8", water: "#4590B8", water-fog: "#4590B8", fog: "#D8EAF0"}
+    AUTUMN: {foliage: "#A0A8A0", grass: "#ACB4AC", sky: "#A9A9A9", water: "#5A6E78", water-fog: "#5A6E78", fog: "#C4C4C4"}
+    WINTER: {foliage: "#E8F0EE", grass: "#F0F6F4", sky: "#EEF6FA", water: "#2A4A5E", water-fog: "#2A4A5E", fog: "#F2F8FA"}

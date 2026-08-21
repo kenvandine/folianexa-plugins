@@ -1,0 +1,28 @@
+# Custom events. Three kinds: dated, weekly, daily.
+# Actions: a line starting with "/" runs as a console command; anything else is a chat message
+# broadcast to online players. Placeholders: %day% %month% %month_asname% %year% %weekday% %season%
+# %world%, plus any PlaceholderAPI placeholder.
+#
+# dated:  date is dd/mm/yyyy, mm/dd/yyyy, or a bare day-of-month (recurs monthly). Omit the year
+#         for annual recurrence. If a configured date does not exist on the active calendar
+#         (e.g. day 31 in a 30-day month), it snaps to the closest valid day.
+# weekly: fires on the named weekday.
+# daily:  fires at midnight every day.
+
+dated: []
+  # - name: server-anniversary
+  #   date: 15/06
+  #   actions:
+  #     - "&aHappy anniversary, %world%!"
+  #     - "/weather clear"
+
+weekly: []
+  # - name: weekend-bonus
+  #   weekday: Saturday
+  #   actions:
+  #     - "&6Weekend double-drops are active!"
+
+daily: []
+  # - name: midnight-tick
+  #   actions:
+  #     - "/say a new day begins"

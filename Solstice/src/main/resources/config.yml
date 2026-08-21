@@ -1,0 +1,56 @@
+# Solstice main configuration.
+# Season start dates use the calendar defined in calendar.yml (day/month).
+
+worlds:
+  # Worlds Solstice manages. Empty list = every world.
+  enabled: []
+  disabled-worlds: []
+
+seasons:
+  spring:
+    start-day: 4
+    start-month: 3
+  summer:
+    start-day: 4
+    start-month: 6
+  autumn:
+    start-day: 4
+    start-month: 9
+  winter:
+    start-day: 4
+    start-month: 12
+
+sub-seasons:
+  enabled: true
+
+visuals:
+  biome-colors:
+    enabled: true
+    skip-bedrock-clients: true
+  particles:
+    enabled: true
+  cherry-blossom-spring: true
+
+world-effects:
+  snow-ice:
+    enabled: true
+    blocks-per-tick-per-region: 8
+  flora:
+    enabled: true
+  crops:
+    winter-requires-roof: true
+    summer-growth-multiplier: 2.0
+  mob-replacements:
+    summer-husks: true
+    winter-strays: true
+    autumn-pumpkin-chance: 0.20
+
+claim-guard:
+  # Which region-protection plugin to defer to before placing/removing blocks.
+  provider: none  # none | worldguard
+
+placeholderapi:
+  register-rs-alias: false
+
+storage:
+  player-data-save-interval-seconds: 60

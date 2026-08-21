@@ -1,0 +1,104 @@
+# Solstice temperature model. All values in Celsius unless noted. Recalculated every
+# recalculate-interval-seconds per player.
+
+enabled: true
+recalculate-interval-seconds: 2
+default-unit: celsius   # celsius | fahrenheit
+disabled-dimensions: []  # e.g. [NETHER, THE_END]
+
+display:
+  action-bar: true
+  chat-warnings: true
+
+season-base:
+  # min, max
+  WINTER: {min: -12, max: 0}
+  SPRING: {min: 0, max: 20}
+  SUMMER: {min: 20, max: 40}
+  AUTUMN: {min: 5, max: 20}
+
+weather:
+  clear: 0
+  rain-or-snow: -4
+  thunder: -5
+
+time-of-day:
+  night-modifier: -5      # ticks 14800-23500
+  midday-modifier: 3      # ticks 6000-12000
+  night-start-tick: 14800
+  night-end-tick: 23500
+  midday-start-tick: 6000
+  midday-end-tick: 12000
+
+biome-groups:
+  hot: {biomes: [BADLANDS, ERODED_BADLANDS, WOODED_BADLANDS, DESERT], modifier: 15}
+  jungle: {biomes: [JUNGLE, SPARSE_JUNGLE, BAMBOO_JUNGLE], modifier: 12}
+  savanna: {biomes: [SAVANNA, SAVANNA_PLATEAU, WINDSWEPT_SAVANNA], modifier: 10}
+  cold: {biomes: [WINDSWEPT_HILLS, WINDSWEPT_GRAVELLY_HILLS, TAIGA, OLD_GROWTH_PINE_TAIGA, OLD_GROWTH_SPRUCE_TAIGA, WINDSWEPT_FOREST], modifier: -4}
+  frozen: {biomes: [SNOWY_PLAINS, SNOWY_TAIGA, SNOWY_BEACH, SNOWY_SLOPES, FROZEN_PEAKS, FROZEN_OCEAN, FROZEN_RIVER, ICE_SPIKES, JAGGED_PEAKS, GROVE], modifier: -12}
+  # anything not listed defaults to "temperate" (modifier 0)
+
+altitude:
+  reference-y: 64
+  above-per-block: -0.08     # per block above reference-y, disabled in winter
+  below-per-block-winter: 0.2  # per block below reference-y, winter only
+
+water:
+  summer-winter-modifier: -10
+  spring-autumn-modifier: -4
+  decay-per-2-seconds: 1
+
+sprinting:
+  max-modifier: 4
+
+nearby-blocks:
+  radius: 16
+  lava: 22
+  fire: 16
+  campfire: 15
+  torch: 7
+  lantern: 7
+  soul-fire: -16
+  blue-ice: -15
+  soul-campfire: -10
+  soul-torch: -7
+  soul-lantern: -7
+  ice: -6
+  packed-ice: -6
+
+armor:
+  leather-per-piece: 5
+  leather-full-set: 20
+  leather-cap: 25
+  iron-gold-diamond-per-piece: 1.25
+  iron-gold-diamond-full-set: 5
+  netherite-per-piece: 0.75
+  netherite-full-set: 3
+
+food:
+  full-hunger-below-c: 25
+  full-hunger-modifier: 5
+  water-bottle-above-c: 25
+  water-bottle-modifier: -10
+  water-bottle-duration-seconds: 300
+
+effects:
+  freezing-damage-below-c: -20
+  freezing-damage-interval-seconds: 2
+  slowness-below-c: -15
+  hunger-below-c: -10
+  cold-breath-at-or-below-c: 0
+  comfortable-min-c: 15
+  comfortable-max-c: 30
+  comfortable-effect: NONE   # e.g. RESISTANCE; NONE disables
+  comfortable-effect-amplifier: 0
+  sweating-above-c: 40
+  healing-disabled-above-c: 50
+  slowness-above-c: 60
+  burning-above-c: 65
+
+custom-items: []
+  # - material: TORCH
+  #   custom-model-data: 1001
+  #   modifier: 10
+  #   slot: HAND   # HAND | ARMOR

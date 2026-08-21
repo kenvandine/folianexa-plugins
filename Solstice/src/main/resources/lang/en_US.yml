@@ -1,0 +1,45 @@
+prefix: "&b[Solstice]&r "
+
+general:
+  no-permission: "&cYou don't have permission to do that."
+  player-only: "&cOnly players can use this command."
+  unknown-command: "&cUnknown subcommand. Use /solstice help."
+  reloaded: "&aSolstice configuration reloaded."
+  invalid-world: "&cThat world isn't managed by Solstice."
+
+season:
+  info: "&7Season: &f%season% &7| Date: &f%date% &7| Time: &f%time% &7| Next season in &f%days%&7 days"
+  active-events: "&7Active events: &f%events%"
+  no-active-events: "&7No active events."
+  changed: "&e%world% has entered &f%season%&e."
+  set: "&aSet %world% to %season%."
+  date-set: "&aSet %world%'s date to %date%."
+  advanced: "&aAdvanced %world% to the next season: %season%."
+  paused: "&aTime paused for %world%."
+  unpaused: "&aTime resumed for %world%."
+
+toggles:
+  colors-on: "&aSeasonal biome colors enabled."
+  colors-off: "&7Seasonal biome colors disabled."
+  temperature-on: "&aTemperature display enabled."
+  temperature-off: "&7Temperature display disabled."
+  particles-on: "&aSeasonal particles enabled."
+  particles-off: "&7Seasonal particles disabled."
+  fahrenheit-on: "&aNow showing temperature in Fahrenheit."
+  fahrenheit-off: "&aNow showing temperature in Celsius."
+
+biome:
+  current: "&7You are standing in: &f%biome%"
+
+temperature:
+  action-bar: "%icon% %temperature%"
+  warning-freezing: "&b&lYou are freezing!"
+  warning-hot: "&c&lYou are overheating!"
+  warning-burning: "&4&lYou are burning up!"
+
+admin:
+  restore-started: "&eRestoring %world% to its pre-Solstice state..."
+  restore-done: "&aRestore complete for %world%."
+  install-started: "&eInstalling seasonal generator patch for %world%..."
+  install-done: "&aInstall complete for %world%."
+  disabled: "&7Solstice disabled for %world%."

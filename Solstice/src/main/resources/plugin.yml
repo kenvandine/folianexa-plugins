@@ -1,0 +1,65 @@
+name: Solstice
+version: ${project.version}
+main: io.github.kenvandine.solstice.Solstice
+api-version: '1.21'
+folia-supported: true
+author: kenvandine
+description: A from-scratch, Folia-native seasons, calendar, and temperature plugin.
+
+softdepend: [PacketEvents, PlaceholderAPI, WorldGuard]
+
+commands:
+  solstice:
+    description: Solstice admin command root.
+    aliases: [sol]
+  season:
+    description: Show the current season, date, and active events.
+  toggleseasoncolors:
+    description: Toggle seasonal biome recoloring for yourself.
+  toggletemperature:
+    description: Toggle the temperature display for yourself.
+  toggleseasonparticles:
+    description: Toggle seasonal ambient particles for yourself.
+  togglefahrenheit:
+    description: Toggle Celsius/Fahrenheit for yourself.
+  currentbiome:
+    description: Show the biome you are standing in.
+
+permissions:
+  solstice.*:
+    description: Grants every Solstice permission.
+    default: op
+    children:
+      solstice.getinfo: true
+      solstice.toggleseasons: true
+      solstice.toggletemperature: true
+      solstice.toggletemperature.others: true
+      solstice.toggleparticles: true
+      solstice.togglefahrenheit: true
+      solstice.getbiome: true
+      solstice.admin: true
+
+  solstice.getinfo:
+    description: Use /season.
+    default: true
+  solstice.toggleseasons:
+    description: Use /toggleseasoncolors.
+    default: true
+  solstice.toggletemperature:
+    description: Use /toggletemperature.
+    default: true
+  solstice.toggletemperature.others:
+    description: Toggle another player's temperature display.
+    default: op
+  solstice.toggleparticles:
+    description: Use /toggleseasonparticles.
+    default: true
+  solstice.togglefahrenheit:
+    description: Use /togglefahrenheit.
+    default: true
+  solstice.getbiome:
+    description: Use /currentbiome.
+    default: true
+  solstice.admin:
+    description: Use all /solstice admin subcommands.
+    default: op
