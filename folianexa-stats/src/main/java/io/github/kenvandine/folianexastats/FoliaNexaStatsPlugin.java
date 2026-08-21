@@ -93,24 +93,7 @@ public final class FoliaNexaStatsPlugin extends JavaPlugin {
 
     /** Called on join, and once for each already-online player at plugin enable. */
     void trackPlayer(Player player) {
-        String uuid = player.getUniqueId().toString();
-        tracker.onJoin(uuid, player.getName(), Instant.now());
-
-        if (tracker.needsBaseline(uuid)) {
-            Bukkit.getAsyncScheduler().runNow(this, scheduledTask -> {
-                HttpMgmtClient.PlayerBaseline baseline = mgmtClient.fetchPlayer(uuid).orElse(null);
-                if (baseline == null) {
-                    // Fetch failed (network/mgmt error, not a genuine "unknown
-                    // player" 404 — see HttpMgmtClient#fetchPlayer's docs) —
-                    // leave needsBaseline() true so the next join (or a future
-                    // retry loop, if this matters enough to add one) tries
-                    // again, rather than seeding a wrong zero baseline.
-                    getLogger().warning("Could not load existing stats baseline for " + uuid + " — will not report for this player until it loads");
-                    return;
-                }
-                tracker.applyBaseline(uuid, baseline.kills(), baseline.deaths(), baseline.blocksMined(), baseline.playtimeSecondsTotal());
-            });
-        }
+        tracker.onJoin(player.getUniqueId().toString(), player.getName(), Instant.now());
     }
 
     StatsTracker getTracker() {
@@ -164,6 +147,15 @@ public final class FoliaNexaStatsPlugin extends JavaPlugin {
     }
 
     private void sendReportAsync() {
-        Bukkit.getAsyncScheduler().runNow(this, scheduledTask -> mgmtClient.reportStats(tracker.drainReports()));
+        Bukkit.getAsyncScheduler().runNow(this, scheduledTask -> {
+            List<StatsTracker.PlayerReport> reports = tracker.snapshotReports();
+            // Only clear the reported deltas once mgmt actually has them —
+            // see StatsTracker#confirmReported's docs for why clearing
+            // eagerly would lose progress on a failed send instead of just
+            // reporting it a cycle late.
+            if (mgmtClient.reportStats(reports)) {
+                tracker.confirmReported(reports);
+            }
+        });
     }
 }

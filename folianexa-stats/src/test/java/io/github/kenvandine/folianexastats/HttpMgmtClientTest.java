@@ -10,7 +10,6 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -32,61 +31,13 @@ class HttpMgmtClientTest {
         if (server != null) server.stop(0);
     }
 
-    private String startServerReturning(int status, String body) throws IOException {
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/", exchange -> {
-            byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(status, bytes.length);
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(bytes);
-            }
-        });
-        server.start();
-        return "http://127.0.0.1:" + server.getAddress().getPort();
+    private StatsTracker.PlayerReport sampleReport() {
+        return new StatsTracker.PlayerReport(
+                "abc", "Steve", Map.of("kills", 5.0), Map.of("auraskills_power_level", 3.0), Map.of("2026-08-15", 600L));
     }
 
     @Test
-    void fetchPlayerParsesRealResponseShape() throws IOException {
-        String body = """
-                {"uuid":"abc","username":"Steve","first_seen":"2026-08-15T00:00:00","last_seen":"2026-08-15T00:00:00",
-                 "stats":{"kills":5,"deaths":1,"blocks_mined":200,"playtime_seconds_total":3600},
-                 "playtime_daily":[{"date":"2026-08-15","seconds":600}]}
-                """;
-        String baseUrl = startServerReturning(200, body);
-        HttpMgmtClient client = new HttpMgmtClient(baseUrl, "token", Logger.getLogger("test"));
-
-        Optional<HttpMgmtClient.PlayerBaseline> baseline = client.fetchPlayer("abc");
-
-        assertTrue(baseline.isPresent());
-        assertEquals(5.0, baseline.get().kills());
-        assertEquals(1.0, baseline.get().deaths());
-        assertEquals(200.0, baseline.get().blocksMined());
-        assertEquals(3600.0, baseline.get().playtimeSecondsTotal());
-    }
-
-    @Test
-    void fetchPlayer404ReturnsZeroBaselineNotEmpty() throws IOException {
-        String baseUrl = startServerReturning(404, "{\"detail\":\"no such player\"}");
-        HttpMgmtClient client = new HttpMgmtClient(baseUrl, "token", Logger.getLogger("test"));
-
-        Optional<HttpMgmtClient.PlayerBaseline> baseline = client.fetchPlayer("unknown-uuid");
-
-        assertTrue(baseline.isPresent(), "a genuine 404 (unknown player) must resolve to a real zero baseline, not empty");
-        assertEquals(HttpMgmtClient.PlayerBaseline.ZERO, baseline.get());
-    }
-
-    @Test
-    void fetchPlayerServerErrorReturnsEmptyNotZero() throws IOException {
-        String baseUrl = startServerReturning(500, "internal error");
-        HttpMgmtClient client = new HttpMgmtClient(baseUrl, "token", Logger.getLogger("test"));
-
-        Optional<HttpMgmtClient.PlayerBaseline> baseline = client.fetchPlayer("abc");
-
-        assertFalse(baseline.isPresent(), "a transient mgmt failure must not be treated as \"no existing data\"");
-    }
-
-    @Test
-    void reportStatsSendsExpectedJsonAndAuthHeader() throws IOException, InterruptedException {
+    void reportStatsSendsExpectedJsonAndAuthHeaderAndReturnsTrueOn200() throws IOException, InterruptedException {
         AtomicReference<String> receivedBody = new AtomicReference<>();
         AtomicReference<String> receivedAuth = new AtomicReference<>();
         AtomicReference<String> receivedPath = new AtomicReference<>();
@@ -106,23 +57,44 @@ class HttpMgmtClientTest {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
 
         HttpMgmtClient client = new HttpMgmtClient(baseUrl, "secret-token", Logger.getLogger("test"));
-        StatsTracker.PlayerReport report = new StatsTracker.PlayerReport(
-                "abc", "Steve", Map.of("kills", 5.0), Map.of("2026-08-15", 600L));
-        client.reportStats(List.of(report));
+        boolean ok = client.reportStats(List.of(sampleReport()));
 
         // The HTTP call happens synchronously inside reportStats (this
         // test calls it directly off any scheduler, unlike the real
         // plugin which always does so via AsyncScheduler), so the
         // request has already landed by the time send() returns.
+        assertTrue(ok);
         assertEquals("/api/v1/stats/report", receivedPath.get());
         assertEquals("Bearer secret-token", receivedAuth.get());
         assertTrue(receivedBody.get().contains("\"uuid\":\"abc\""), receivedBody.get());
+        assertTrue(receivedBody.get().contains("\"stat_deltas\""), receivedBody.get());
         assertTrue(receivedBody.get().contains("\"kills\":5"), receivedBody.get());
+        assertTrue(receivedBody.get().contains("\"gauges\""), receivedBody.get());
+        assertTrue(receivedBody.get().contains("\"auraskills_power_level\":3"), receivedBody.get());
         assertTrue(receivedBody.get().contains("\"2026-08-15\":600"), receivedBody.get());
     }
 
     @Test
-    void reportStatsWithEmptyListSendsNoRequest() throws IOException {
+    void reportStatsReturnsFalseOnNon200() throws IOException {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            byte[] resp = "{\"detail\":\"missing bearer token\"}".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(401, resp.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(resp);
+            }
+        });
+        server.start();
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
+
+        HttpMgmtClient client = new HttpMgmtClient(baseUrl, "wrong-token", Logger.getLogger("test"));
+        boolean ok = client.reportStats(List.of(sampleReport()));
+
+        assertFalse(ok, "caller must not confirm/clear deltas that mgmt actually rejected");
+    }
+
+    @Test
+    void reportStatsWithEmptyListSendsNoRequestAndReturnsTrue() throws IOException {
         AtomicReference<Boolean> called = new AtomicReference<>(false);
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
@@ -134,37 +106,39 @@ class HttpMgmtClientTest {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
 
         HttpMgmtClient client = new HttpMgmtClient(baseUrl, "token", Logger.getLogger("test"));
-        client.reportStats(List.of());
+        boolean ok = client.reportStats(List.of());
 
         assertFalse(called.get());
+        assertTrue(ok, "nothing to send is trivially a success, not a failure to retry");
     }
 
     @Test
-    void blankBaseUrlDoesNotThrowOnFetchOrReport() {
+    void blankBaseUrlDoesNotThrowAndReportStatsReturnsTrue() {
         // A blank mgmt-base-url (unset config) must not attempt a
         // request at all — URI.create("" + path) is a relative URI, and
         // HttpRequest.Builder#uri() throws IllegalArgumentException for
         // that synchronously, before this class's try/catch even starts.
         // Without the enabled-guard, this would escape as an uncaught
-        // exception on every join and every report cycle instead of the
-        // "disabled until configured" behavior the plugin warns about at
-        // startup.
+        // exception on every report cycle instead of the "disabled until
+        // configured" behavior the plugin warns about at startup.
         HttpMgmtClient client = new HttpMgmtClient("", "token", Logger.getLogger("test"));
 
-        assertFalse(client.fetchPlayer("abc").isPresent());
+        boolean ok = client.reportStats(List.of(sampleReport()));
 
-        StatsTracker.PlayerReport report = new StatsTracker.PlayerReport(
-                "abc", "Steve", Map.of("kills", 5.0), Map.of());
-        client.reportStats(List.of(report)); // must return quietly, not throw
+        assertTrue(ok, "disabled (no baseUrl) must not be reported as a failure the caller retries forever");
     }
 
     @Test
-    void malformedBaseUrlDoesNotThrow() {
+    void malformedBaseUrlDoesNotThrowAndReturnsFalse() {
         // Any other syntactically-broken value (missing scheme, stray
         // whitespace, ...) must be swallowed the same way a network
-        // failure is, not escape as an uncaught IllegalArgumentException.
+        // failure is, not escape as an uncaught IllegalArgumentException —
+        // and unlike the blank case above, this one IS enabled and really
+        // did fail to send, so the caller must not confirm the deltas.
         HttpMgmtClient client = new HttpMgmtClient("mgmt.internal:8443", "token", Logger.getLogger("test"));
 
-        assertFalse(client.fetchPlayer("abc").isPresent());
+        boolean ok = client.reportStats(List.of(sampleReport()));
+
+        assertFalse(ok);
     }
 }

@@ -63,15 +63,22 @@ in the `FoliaNexa` repo for how the mgmt-side API token is issued
 
 ## Design notes
 
-- **Why a player's reported "total" doesn't reset to zero on server
-  restart:** mgmt mirrors whatever value this plugin reports as a
-  player's current absolute total — it doesn't sum deltas server-side.
-  So the first time this plugin sees a player in a given process
-  lifetime, it fetches their existing totals from mgmt's own public API
-  (`GET /api/v1/public/players/{uuid}`) as a baseline before reporting
-  anything for them — see `StatsTracker`'s class docs for the full
-  reasoning. A player is only included in a report cycle once that
-  baseline has actually loaded.
+- **Deltas, not totals:** every report sends how much each counter
+  (kills/deaths/blocks mined/playtime) has changed since the last
+  *successfully delivered* report, and mgmt sums deltas into its own
+  running total server-side (`mgmt/src/folia_mgmt/routers/stats.py`).
+  An earlier design instead reported "the player's current absolute
+  total" (fetched once from mgmt as a baseline, then base+local
+  thereafter) — that broke the moment a player was tracked by more than
+  one world at once, which is the common case, not an edge case: this
+  plugin is `default_for_all_worlds: true`, so any hub-and-spoke cluster
+  has every player passing through at least two worlds. Two independent
+  "this is the real total" reports just clobbered each other every
+  cycle, confirmed live as visibly flickering public stats. See
+  `StatsTracker`'s class docs for the full reasoning, including why a
+  failed/unsent report doesn't lose that cycle's deltas (they're only
+  cleared once mgmt actually confirms receiving them —
+  `StatsTracker#confirmReported`).
 - **Folia scheduling:** the periodic report cycle runs each online
   player's playtime-flush and AuraSkills/Vault reads on *that player's
   own region thread* (`Bukkit.getRegionScheduler()`) — these touch other
@@ -90,10 +97,12 @@ in the `FoliaNexa` repo for how the mgmt-side API token is issued
 
 Built and tested with real Gradle (JDK 21, `com.gradleup.shadow`
 8.3.5) — `./gradlew build` succeeds, producing a real shadow jar.
-24 tests, all passing, all real (no mocking library): `MiniJsonTest`
+26 tests, all passing, all real (no mocking library): `MiniJsonTest`
 and `PlaytimeSplitterTest` exercise the pure-Java pieces directly;
-`StatsTrackerTest` covers the baseline-seeding/never-regress logic and
-midnight-crossing playtime accounting; `HttpMgmtClientTest` runs
+`StatsTrackerTest` covers the snapshot/confirm delta accounting
+(including that activity recorded mid-network-round-trip survives a
+confirm against an earlier snapshot) and midnight-crossing playtime
+accounting; `HttpMgmtClientTest` runs
 against a real local JDK `HttpServer`, not a mock, confirming the exact
 request/response shapes this plugin sends and expects.
 
