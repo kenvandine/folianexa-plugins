@@ -121,8 +121,10 @@ final class PasteService {
         activeJobsByPlayer.put(playerId, job);
 
         String markerSummary = plan.markers().isEmpty() ? "" : " " + plan.markers().size() + " marker(s) resolved.";
-        messageCallback.accept("Pasting '" + request.schematicName() + "' — " + plan.totalPlacements() + " block(s) across "
-                + plan.chunks().size() + " chunk(s)." + markerSummary);
+        String startMessage = "Pasting '" + request.schematicName() + "' — " + plan.totalPlacements() + " block(s) across "
+                + plan.chunks().size() + " chunk(s)." + markerSummary;
+        messageCallback.accept(startMessage);
+        plugin.getLogger().info(() -> startMessage + " (requested by " + request.player().getName() + ")");
 
         PasteEngine.execute(plugin, world, plan, job, clearBounds, pasteConfig.unknownBlock(), (finishedJob, undoEntries, unknownCount) -> {
             activeJobsByPlayer.remove(playerId, finishedJob);
@@ -136,6 +138,7 @@ final class PasteService {
                 if (unknownCount > 0) {
                     outcome += " " + unknownCount + " block(s) used an unrecognized state and were substituted per paste.unknown-block.";
                 }
+                plugin.getLogger().info(outcome);
                 messageCallback.accept(outcome);
             });
         });

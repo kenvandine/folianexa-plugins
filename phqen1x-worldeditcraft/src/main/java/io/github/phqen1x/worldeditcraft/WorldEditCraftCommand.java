@@ -91,13 +91,20 @@ final class WorldEditCraftCommand implements CommandExecutor {
         }
 
         sender.sendMessage("Asking Lemonade to generate: " + brief);
+        plugin.getLogger().info(() -> sender.getName() + " asked Lemonade to generate: " + brief);
 
         plugin.runAsync(() -> {
             GenerationService.GenerationResult result = plugin.generationService().generate(brief, null);
             if (!result.success()) {
-                sender.sendMessage("Generation failed after " + result.attempts() + " attempt(s): " + result.errorMessage());
+                String failure = "Generation failed after " + result.attempts() + " attempt(s): " + result.errorMessage();
+                sender.sendMessage(failure);
+                plugin.getLogger().warning(failure);
+                for (var issue : result.issues()) {
+                    plugin.getLogger().warning(() -> "  [" + issue.severity() + "] op " + issue.opIndex() + ": " + issue.operatorMessage());
+                }
                 return;
             }
+            plugin.getLogger().info(() -> "Generated '" + result.slug() + "' in " + result.attempts() + " attempt(s) for " + sender.getName() + ".");
             sender.sendMessage("Generated '" + result.slug() + "' in " + result.attempts() + " attempt(s).");
             if (placeImmediately) {
                 PasteService.PasteRequest request = new PasteService.PasteRequest(result.slug(), (Player) sender, 0, Transform.Flip.NONE, false);
