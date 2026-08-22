@@ -8,7 +8,7 @@ load: POSTWORLD
 commands:
   wec:
     description: Generate, paste, and manage natural-language Minecraft structures.
-    usage: /wec <generate|regen|list|info|preview|paste|undo|cancel|rename|tag|delete|import|export|status|reload>
+    usage: /wec <generate|regen|list|info|preview|paste|undo|cancel|rename|tag|delete|import|export|status|reload|set>
 
 permissions:
   worldeditcraft.generate:
@@ -21,5 +21,5 @@ permissions:
     description: Browse and manage the schematic library.
     default: op
   worldeditcraft.admin:
-    description: View Lemonade/queue status and reload config.
+    description: View Lemonade/queue status, reload config, and change lemonade.* settings with /wec set.
     default: op

@@ -1,10 +1,16 @@
 lemonade:
+  # base-url, api-path, model and api-key can all be set in-game with
+  # /wec set <key> <value> (worldeditcraft.admin) instead of hand-editing
+  # this file — see the plugin README's "/wec set" section. Editing here
+  # and running /wec reload works too, but /wec set also persists the
+  # change to disk for you.
   base-url: "http://lemonade.local:13305"   # the LAN inference host
   api-path: "/api/v1"                       # Lemonade's canonical prefix; "/v1" also works
   model: ""                                 # blank = first model from /api/v1/models — see README.md "Choosing a model" for recommendations (e.g. Qwen3-Coder-30B-A3B-Instruct-GGUF)
   api-key: ""                               # sent as a bearer token when non-blank
   connect-timeout-seconds: 10
   request-timeout-seconds: 180
+  pull-timeout-seconds: 1800                # generous — /wec generate pulls+loads the model first, and a first pull can be a multi-GB download
   temperature: 0.4
   top-p: 0.9
   max-tokens: 8192

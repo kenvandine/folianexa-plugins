@@ -52,6 +52,26 @@ public final class WorldEditCraftPlugin extends JavaPlugin {
         return generationService;
     }
 
+    /**
+     * Writes one {@code config.yml} path and persists it to disk — the
+     * mechanism behind {@code /wec set}. Reloads every config-derived
+     * service afterward, the same as {@link #reloadWorldEditCraftConfig()}
+     * on its own, so the change takes effect immediately without a
+     * separate {@code /wec reload}.
+     *
+     * <p>Known limitation: Bukkit's {@link org.bukkit.configuration.file.YamlConfiguration}
+     * rewrites the whole file on save and does not preserve comments, so
+     * every {@code # ...} explanation in the shipped {@code config.yml}
+     * is lost from the on-disk file the first time this is called — the
+     * values survive, the documentation next to them doesn't. See the
+     * plugin README for the tradeoff this accepts.
+     */
+    void setConfigPath(String path, String value) {
+        getConfig().set(path, value);
+        saveConfig();
+        reloadWorldEditCraftConfig();
+    }
+
     /** Runs {@code task} on Paper's async scheduler — never a game-tick thread (see docs/phqen1x-rpg-suite/07-folia-safety.md). */
     void runAsync(Runnable task) {
         Bukkit.getAsyncScheduler().runNow(this, scheduledTask -> task.run());

@@ -78,7 +78,7 @@ class LemonadeClientTest {
     void handlesConnectionRefusedWithoutThrowing() {
         // Nothing is listening on this port.
         LemonadeSettings settings = new LemonadeSettings("http://127.0.0.1:1", "/api/v1", "test-model", "",
-                1, 2, 0.4, 0.9, 512, 3, 2, 32);
+                1, 2, 5, 0.4, 0.9, 512, 3, 2, 32);
         LemonadeClient client = new LemonadeClient(settings, Logger.getLogger("test"));
         LemonadeClient.ChatResult result = client.chatCompletion(List.of(Map.of("role", "user", "content", "x")));
         assertFalse(result.success());
@@ -94,6 +94,44 @@ class LemonadeClientTest {
     }
 
     @Test
+    void pullModelSendsModelNameAndParsesSuccess() throws IOException {
+        AtomicReference<String> capturedBody = new AtomicReference<>();
+        server = startServer("/api/v1/pull", exchange -> {
+            capturedBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            sendJson(exchange, 200, "{\"status\":\"success\",\"message\":\"Installed model: my-model\"}");
+        });
+
+        LemonadeClient.ManagementResult result = clientFor(server).pullModel("my-model");
+
+        assertTrue(result.success());
+        assertEquals("Installed model: my-model", result.message());
+        assertTrue(capturedBody.get().contains("\"model_name\":\"my-model\""));
+    }
+
+    @Test
+    void pullModelFailsCleanlyOnNon200() throws IOException {
+        server = startServer("/api/v1/pull", exchange -> sendJson(exchange, 404, "{\"detail\":\"unknown model\"}"));
+        LemonadeClient.ManagementResult result = clientFor(server).pullModel("does-not-exist");
+        assertFalse(result.success());
+        assertTrue(result.message().contains("404"));
+    }
+
+    @Test
+    void loadModelSendsModelNameAndParsesSuccess() throws IOException {
+        AtomicReference<String> capturedBody = new AtomicReference<>();
+        server = startServer("/api/v1/load", exchange -> {
+            capturedBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            sendJson(exchange, 200, "{\"status\":\"success\",\"message\":\"Loaded model: my-model\"}");
+        });
+
+        LemonadeClient.ManagementResult result = clientFor(server).loadModel("my-model");
+
+        assertTrue(result.success());
+        assertEquals("Loaded model: my-model", result.message());
+        assertTrue(capturedBody.get().contains("\"model_name\":\"my-model\""));
+    }
+
+    @Test
     void sendsAuthorizationHeaderOnlyWhenApiKeyIsNonBlank() throws IOException {
         AtomicReference<String> authHeader = new AtomicReference<>();
         server = startServer("/api/v1/chat/completions", exchange -> {
@@ -102,14 +140,14 @@ class LemonadeClientTest {
         });
 
         LemonadeSettings withKey = new LemonadeSettings(baseUrlOf(server), "/api/v1", "m", "secret-token",
-                5, 10, 0.4, 0.9, 512, 3, 2, 32);
+                5, 10, 20, 0.4, 0.9, 512, 3, 2, 32);
         new LemonadeClient(withKey, Logger.getLogger("test")).chatCompletion(List.of(Map.of("role", "user", "content", "x")));
         assertEquals("Bearer secret-token", authHeader.get());
     }
 
     private static LemonadeClient clientFor(HttpServer server) {
         LemonadeSettings settings = new LemonadeSettings(baseUrlOf(server), "/api/v1", "test-model", "",
-                5, 10, 0.4, 0.9, 512, 3, 2, 32);
+                5, 10, 20, 0.4, 0.9, 512, 3, 2, 32);
         return new LemonadeClient(settings, Logger.getLogger("test"));
     }
 

@@ -18,8 +18,14 @@ import java.util.Locale;
  * needs a region scheduler. Placement ({@code paste}/{@code preview}/
  * {@code undo}/{@code cancel}) is the one piece of the design not yet
  * implemented in this build — see the plugin README for milestone status.
+ * {@code set} is a small extension beyond the design doc's own command
+ * table: it lets an operator point at a different Lemonade host or
+ * switch models without hand-editing {@code config.yml}.
  */
 final class WorldEditCraftCommand implements CommandExecutor {
+
+    /** Keys settable via {@code /wec set <key> <value>}, in the order shown in usage messages. */
+    private static final List<String> SETTABLE_KEYS = List.of("base-url", "api-path", "model", "api-key");
 
     private final WorldEditCraftPlugin plugin;
 
@@ -42,6 +48,7 @@ final class WorldEditCraftCommand implements CommandExecutor {
             case "rename" -> handleRename(sender, args);
             case "status" -> handleStatus(sender);
             case "reload" -> handleReload(sender);
+            case "set" -> handleSet(sender, label, args);
             case "regen", "preview", "paste", "undo", "cancel", "tag", "import", "export" ->
                     sender.sendMessage("'" + args[0] + "' isn't implemented in this build yet — see the plugin README's milestone status.");
             default -> sender.sendMessage(usage(label));
@@ -173,7 +180,65 @@ final class WorldEditCraftCommand implements CommandExecutor {
         });
     }
 
+    /**
+     * {@code /wec set <key> <value>} — writes one {@code lemonade.*}
+     * config.yml key to disk (via {@link WorldEditCraftPlugin#setConfigPath})
+     * and reloads immediately, so an operator never has to hand-edit
+     * {@code config.yml} just to point at a different Lemonade host or
+     * switch models. Setting {@code model} to a non-blank value also
+     * eagerly pulls and loads it right away, so a typo or an unavailable
+     * model id is caught here rather than silently at the next {@code
+     * /wec generate} (which pulls+loads the configured model itself
+     * regardless — see {@code GenerationService#ensureModelReady} — this
+     * is purely for immediate feedback).
+     */
+    private void handleSet(CommandSender sender, String label, String[] args) {
+        if (!sender.hasPermission("worldeditcraft.admin")) {
+            sender.sendMessage("You don't have permission to do that.");
+            return;
+        }
+        if (args.length < 3) {
+            sender.sendMessage("Usage: /" + label + " set <" + String.join("|", SETTABLE_KEYS) + "> <value>");
+            return;
+        }
+        String key = args[1].toLowerCase(Locale.ROOT);
+        String path = lemonadeConfigPath(key);
+        if (path == null) {
+            sender.sendMessage("Unknown setting '" + key + "'. Valid keys: " + String.join(", ", SETTABLE_KEYS) + ".");
+            return;
+        }
+        String value = String.join(" ", List.of(args).subList(2, args.length));
+
+        plugin.runAsync(() -> {
+            plugin.setConfigPath(path, value);
+            sender.sendMessage("Set lemonade." + key + " = '" + value + "' and reloaded config.yml.");
+
+            if (key.equals("model") && !value.isBlank()) {
+                sender.sendMessage("Asking Lemonade to pull and load '" + value + "' — this can take a while on a first download...");
+                LemonadeClient.ManagementResult pulled = plugin.lemonadeClient().pullModel(value);
+                if (!pulled.success()) {
+                    sender.sendMessage("Could not install '" + value + "': " + pulled.message());
+                    return;
+                }
+                LemonadeClient.ManagementResult loaded = plugin.lemonadeClient().loadModel(value);
+                sender.sendMessage(loaded.success()
+                        ? "Model '" + value + "' is installed and loaded."
+                        : "Installed '" + value + "' but could not load it: " + loaded.message());
+            }
+        });
+    }
+
+    private static String lemonadeConfigPath(String key) {
+        return switch (key) {
+            case "base-url" -> "lemonade.base-url";
+            case "api-path" -> "lemonade.api-path";
+            case "model" -> "lemonade.model";
+            case "api-key" -> "lemonade.api-key";
+            default -> null;
+        };
+    }
+
     private String usage(String label) {
-        return "Usage: /" + label + " <generate|regen|list|info|preview|paste|undo|cancel|rename|tag|delete|import|export|status|reload>";
+        return "Usage: /" + label + " <generate|regen|list|info|preview|paste|undo|cancel|rename|tag|delete|import|export|status|reload|set>";
     }
 }

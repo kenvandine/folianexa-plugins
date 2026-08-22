@@ -27,15 +27,15 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * The generate pipeline end to end: prompt -> Lemonade -> extract -> parse
- * -> validate -> repair-or-continue -> rasterize -> save. No {@code
- * org.bukkit} import, but this drives {@link LemonadeClient} and {@link
- * SchematicLibrary}, both real I/O — callers must only invoke {@link
- * #generate} from {@code Bukkit.getAsyncScheduler()} (see
- * docs/phqen1x-rpg-suite/07-folia-safety.md: "Steps 1-8 never touch a
- * game thread"). This class only ever reaches step 8 (the library
- * write); pasting (step 9) is a separate, not-yet-implemented concern —
- * see the plugin README's milestone status.
+ * The generate pipeline end to end: pull+load the configured model ->
+ * prompt -> Lemonade -> extract -> parse -> validate -> repair-or-continue
+ * -> rasterize -> save. No {@code org.bukkit} import, but this drives
+ * {@link LemonadeClient} and {@link SchematicLibrary}, both real I/O —
+ * callers must only invoke {@link #generate} from {@code
+ * Bukkit.getAsyncScheduler()} (see docs/phqen1x-rpg-suite/07-folia-safety.md:
+ * "Steps 1-8 never touch a game thread"). This class only ever reaches
+ * step 8 (the library write); pasting (step 9) is a separate,
+ * not-yet-implemented concern — see the plugin README's milestone status.
  */
 public final class GenerationService {
 
@@ -58,6 +58,11 @@ public final class GenerationService {
     }
 
     public GenerationResult generate(String brief, String requestedName) {
+        Optional<GenerationResult> modelNotReady = ensureModelReady();
+        if (modelNotReady.isPresent()) {
+            return modelNotReady.get();
+        }
+
         List<Map<String, String>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content", PromptBuilder.buildSystemPrompt(config.generation().toLimits())));
         messages.add(Map.of("role", "user", "content", PromptBuilder.buildUserMessage(brief, config.generation().defaultSize())));
@@ -128,6 +133,43 @@ public final class GenerationService {
         String name = requestedName != null && !requestedName.isBlank() ? requestedName : parsed.script().name();
         String slug = saveGeneratedSchematic(interpreted, name, brief);
         return RoundOutcome.success(new GenerationResult(true, slug, validated.issues(), null, attempt));
+    }
+
+    /**
+     * Makes sure {@code lemonade.model} is actually installed and loaded
+     * on the Lemonade server before the first prompt goes out — Lemonade
+     * documents that {@code /chat/completions} would load the model
+     * itself if asked for one that isn't resident, but that folds a
+     * possibly-multi-gigabyte first-time download into the same request
+     * as the inference call, under the (much shorter) inference timeout.
+     * Pulling and loading explicitly first means that wait happens here,
+     * under {@code lemonade.pull-timeout-seconds}, with its own clear
+     * error message rather than a generic inference timeout. A blank
+     * {@code lemonade.model} (the "use whatever's already loaded"
+     * default) skips this entirely — there's no specific id to install.
+     *
+     * <p>Returns a failed {@link GenerationResult} if either step fails;
+     * empty means the model is ready and {@link #generate} should proceed.
+     */
+    private Optional<GenerationResult> ensureModelReady() {
+        String model = config.lemonade().model();
+        if (model == null || model.isBlank()) {
+            return Optional.empty();
+        }
+
+        LemonadeClient.ManagementResult pulled = client.pullModel(model);
+        if (!pulled.success()) {
+            return Optional.of(new GenerationResult(false, null, List.of(),
+                    "Could not install model '" + model + "': " + pulled.message(), 0));
+        }
+
+        LemonadeClient.ManagementResult loaded = client.loadModel(model);
+        if (!loaded.success()) {
+            return Optional.of(new GenerationResult(false, null, List.of(),
+                    "Could not load model '" + model + "': " + loaded.message(), 0));
+        }
+
+        return Optional.empty();
     }
 
     private String saveGeneratedSchematic(BuildScriptInterpreter.Result interpreted, String name, String brief) {

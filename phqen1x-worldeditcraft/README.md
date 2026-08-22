@@ -44,14 +44,24 @@ and unit-tested:
   unquoted keys, `//` comments), `JsonCoercion` (pulls a JSON object out
   of fenced/prose-wrapped model output), and `PromptBuilder` (the system
   prompt is generated from `OpRegistry`, not hand-written).
-- **`GenerationService`** — the full `/wec generate` pipeline: prompt →
-  Lemonade → extract → parse → validate → repair-round-on-failure
-  (up to `lemonade.max-attempts`) → rasterize → write `.schem` → save to
-  the library. Exercised end to end in `GenerationServiceTest` against a
-  real fake Lemonade server (a `com.sun.net.httpserver.HttpServer`) that
-  returns garbage, then an invalid script, then a valid one — the
-  repair loop's `RepairLoopTest` equivalent from the design doc's test
-  plan.
+- **`GenerationService`** — the full `/wec generate` pipeline: pull+load
+  the configured model → prompt → Lemonade → extract → parse → validate
+  → repair-round-on-failure (up to `lemonade.max-attempts`) → rasterize
+  → write `.schem` → save to the library. Before the first prompt,
+  `LemonadeClient` explicitly calls Lemonade's own `POST {api-path}/pull`
+  then `POST {api-path}/load` for `lemonade.model` (skipped when it's
+  blank) — Lemonade's `/chat/completions` documents that it *would* load
+  an unloaded model itself, but that folds a possibly-multi-gigabyte
+  first-time download into the same request as the inference call,
+  under the much shorter inference timeout, instead of under
+  `lemonade.pull-timeout-seconds` with its own clear error message.
+  Exercised end to end in `GenerationServiceTest` against a real fake
+  Lemonade server (a `com.sun.net.httpserver.HttpServer`) that returns
+  garbage, then an invalid script, then a valid one — the repair loop's
+  `RepairLoopTest` equivalent from the design doc's test plan — plus
+  dedicated tests asserting pull-then-load happens before chat, in
+  order, and that a failed pull short-circuits without ever calling
+  `/chat/completions`.
 - **The schematic library** — `SchematicLibrary`/`SchematicIndex`/
   `SchematicRecord`/`SchematicQuery`: real file I/O against a real temp
   directory in tests, slugging, collision suffixes, checksum dedupe,
@@ -59,11 +69,44 @@ and unit-tested:
 - **Config** — `config.yml` matches the design doc's shape exactly,
   including `lemonade.base-url` and `lemonade.model` (the two things
   every deployment must set). `ConfigLoader`/`WorldEditCraftConfig`
-  mirror the pattern in this repo's `hungergames/ConfigLoader`.
+  mirror the pattern in this repo's `hungergames/ConfigLoader`. Every
+  `lemonade.*` key can also be changed in-game and persisted to disk
+  with `/wec set` — see below — rather than hand-editing the file.
 - **The `/wec` command surface**: `generate`, `list`, `info`, `delete`,
-  `rename`, `status`, `reload` are real. `regen`, `preview`, `paste`,
-  `undo`, `cancel`, `tag`, `import`, `export` respond with a clear
-  "not implemented yet" message rather than silently doing nothing.
+  `rename`, `status`, `reload`, `set` are real. `regen`, `preview`,
+  `paste`, `undo`, `cancel`, `tag`, `import`, `export` respond with a
+  clear "not implemented yet" message rather than silently doing
+  nothing.
+
+### `/wec set` — configuring Lemonade without editing `config.yml`
+
+```
+/wec set base-url http://lemonade.local:13305
+/wec set model Qwen3-Coder-30B-A3B-Instruct-GGUF
+/wec set api-path /api/v1
+/wec set api-key sk-...
+```
+
+Requires `worldeditcraft.admin` (the same permission as `/wec status`
+and `/wec reload`). Each call writes the corresponding `lemonade.*` key
+in `config.yml` via Bukkit's own config API (`getConfig().set(...)` +
+`saveConfig()`), then reloads — every config-derived service (the
+Lemonade client, the library, `GenerationService`) picks up the change
+immediately, no separate `/wec reload` needed.
+
+Setting `model` to a non-blank value also eagerly calls Lemonade's
+pull-then-load right away, so a typo'd or unavailable model id is
+caught immediately with a clear message instead of silently surfacing
+at the next `/wec generate` (which pulls+loads the configured model
+itself regardless, every time, as described above — this is purely for
+faster feedback when you change it).
+
+**Known limitation**: Bukkit's `YamlConfiguration` rewrites the whole
+file on save and does not preserve comments, so the first `/wec set`
+call strips every `# ...` explanation from the on-disk `config.yml` —
+the values survive, the documentation next to them doesn't. If you want
+to keep the shipped file's comments intact, hand-edit `config.yml` and
+run `/wec reload` instead of using `/wec set`.
 
 ## What's not implemented yet
 

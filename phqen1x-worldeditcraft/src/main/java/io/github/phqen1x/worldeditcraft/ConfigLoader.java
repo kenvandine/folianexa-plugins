@@ -35,6 +35,7 @@ final class ConfigLoader {
                 config.getString("lemonade.api-key", ""),
                 config.getInt("lemonade.connect-timeout-seconds", 10),
                 config.getInt("lemonade.request-timeout-seconds", 180),
+                config.getInt("lemonade.pull-timeout-seconds", 1800),
                 config.getDouble("lemonade.temperature", 0.4),
                 config.getDouble("lemonade.top-p", 0.9),
                 config.getInt("lemonade.max-tokens", 8192),

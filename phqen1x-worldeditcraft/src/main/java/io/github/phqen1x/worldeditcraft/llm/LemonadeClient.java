@@ -15,10 +15,16 @@ import java.util.logging.Logger;
 
 /**
  * Talks to a Lemonade Server's OpenAI-compatible API — {@code POST
- * {api-path}/chat/completions} and {@code GET {api-path}/models}. No
- * {@code org.bukkit} imports, but this does real I/O — callers must only
- * ever invoke it from {@code Bukkit.getAsyncScheduler()}, never a
- * game-tick thread (see docs/phqen1x-rpg-suite/07-folia-safety.md).
+ * {api-path}/chat/completions} and {@code GET {api-path}/models} — plus
+ * Lemonade's own model-management endpoints, {@code POST
+ * {api-path}/pull} and {@code POST {api-path}/load}, so {@link
+ * io.github.phqen1x.worldeditcraft.GenerationService} can make sure the
+ * configured model is actually installed and resident before asking it
+ * to generate anything, rather than relying on chat/completions' own
+ * (undocumented-timeout) implicit load. No {@code org.bukkit} imports,
+ * but this does real I/O — callers must only ever invoke it from {@code
+ * Bukkit.getAsyncScheduler()}, never a game-tick thread (see
+ * docs/phqen1x-rpg-suite/07-folia-safety.md).
  *
  * <p>Failures are returned, not thrown — a generation that fails should
  * tell the operator why, not propagate an exception into a scheduler
@@ -118,6 +124,80 @@ public final class LemonadeClient {
             logger.log(Level.WARNING, "Lemonade chat completion failed", e);
             return ChatResult.failure(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage(), latency);
         }
+    }
+
+    public record ManagementResult(boolean success, String message) {
+        public static ManagementResult ok(String message) {
+            return new ManagementResult(true, message);
+        }
+
+        public static ManagementResult failure(String message) {
+            return new ManagementResult(false, message);
+        }
+    }
+
+    /**
+     * Installs {@code modelName} on the Lemonade server if it isn't
+     * already downloaded — {@code POST {api-path}/pull}. Idempotent: a
+     * model that's already installed returns success immediately rather
+     * than re-downloading. Uses {@code lemonade.pull-timeout-seconds}
+     * rather than the (much shorter) inference request timeout, since a
+     * first pull can be a multi-gigabyte download.
+     */
+    public ManagementResult pullModel(String modelName) {
+        return postManagement(settings.pullUrl(), Map.of("model_name", modelName), "pull");
+    }
+
+    /**
+     * Loads {@code modelName} into memory — {@code POST {api-path}/load}.
+     * Idempotent: an already-loaded model returns success immediately.
+     * Per Lemonade's own docs, {@code /chat/completions} would load the
+     * model itself if this is skipped — calling it explicitly first
+     * means a slow first load (or a first-time download it triggers)
+     * happens here, with its own generous timeout, rather than eating
+     * into the inference call's timeout budget.
+     */
+    public ManagementResult loadModel(String modelName) {
+        return postManagement(settings.loadUrl(), Map.of("model_name", modelName), "load");
+    }
+
+    private ManagementResult postManagement(String url, Map<String, Object> body, String verb) {
+        String json = MiniJson.write(body);
+        try {
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(settings.pullTimeoutSeconds()))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json));
+            if (!settings.apiKey().isBlank()) {
+                requestBuilder.header("Authorization", "Bearer " + settings.apiKey());
+            }
+
+            HttpResponse<String> response = httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            logger.fine(() -> "Lemonade " + verb + " response (" + response.statusCode() + "): " + response.body());
+            if (response.statusCode() != 200) {
+                return ManagementResult.failure("HTTP " + response.statusCode() + ": " + response.body());
+            }
+            return ManagementResult.ok(extractManagementMessage(response.body()));
+        } catch (IOException | InterruptedException | IllegalArgumentException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            logger.log(Level.WARNING, "Lemonade " + verb + " failed", e);
+            return ManagementResult.failure(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+        }
+    }
+
+    private static String extractManagementMessage(String responseBody) {
+        try {
+            Object parsed = MiniJson.parse(responseBody);
+            if (parsed instanceof Map<?, ?> root && root.get("message") instanceof String message) {
+                return message;
+            }
+        } catch (IllegalArgumentException ignored) {
+            // fall through to the raw body below
+        }
+        return responseBody;
     }
 
     public ModelsResult listModels() {

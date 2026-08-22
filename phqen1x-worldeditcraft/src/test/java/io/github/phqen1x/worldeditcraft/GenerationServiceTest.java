@@ -66,10 +66,11 @@ class GenerationServiceTest {
             Map<String, Object> response = Map.of("choices", List.of(Map.of("message", Map.of("content", assistantContent))));
             sendJson(exchange, MiniJson.write(response));
         });
+        registerModelManagementHandlers(server);
         server.start();
 
         LemonadeSettings settings = new LemonadeSettings("http://127.0.0.1:" + server.getAddress().getPort(),
-                "/api/v1", "test-model", "", 5, 10, 0.4, 0.9, 512, 3, 2, 32);
+                "/api/v1", "test-model", "", 5, 10, 20, 0.4, 0.9, 512, 3, 2, 32);
         LemonadeClient client = new LemonadeClient(settings, Logger.getLogger("test"));
 
         SchematicLibrary library = SchematicLibrary.open(tempDir.resolve("schematics"));
@@ -96,10 +97,11 @@ class GenerationServiceTest {
             Map<String, Object> response = Map.of("choices", List.of(Map.of("message", Map.of("content", "not json, ever"))));
             sendJson(exchange, MiniJson.write(response));
         });
+        registerModelManagementHandlers(server);
         server.start();
 
         LemonadeSettings settings = new LemonadeSettings("http://127.0.0.1:" + server.getAddress().getPort(),
-                "/api/v1", "test-model", "", 5, 10, 0.4, 0.9, 512, 2, 2, 32);
+                "/api/v1", "test-model", "", 5, 10, 20, 0.4, 0.9, 512, 2, 2, 32);
         LemonadeClient client = new LemonadeClient(settings, Logger.getLogger("test"));
         SchematicLibrary library = SchematicLibrary.open(tempDir.resolve("schematics"));
         Path failedDir = tempDir.resolve("failed");
@@ -113,6 +115,69 @@ class GenerationServiceTest {
         assertTrue(java.nio.file.Files.exists(failedDir), "keep-failed-responses is on by default in testConfig()");
     }
 
+    @Test
+    void generatePullsAndLoadsTheConfiguredModelBeforeTheFirstChatRequest(@TempDir Path tempDir) throws IOException {
+        List<String> pathsHit = new java.util.ArrayList<>();
+
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/api/v1/pull", exchange -> {
+            pathsHit.add("pull");
+            sendJson(exchange, "{\"status\":\"success\",\"message\":\"Installed model: test-model\"}");
+        });
+        server.createContext("/api/v1/load", exchange -> {
+            pathsHit.add("load");
+            sendJson(exchange, "{\"status\":\"success\",\"message\":\"Loaded model: test-model\"}");
+        });
+        server.createContext("/api/v1/chat/completions", exchange -> {
+            pathsHit.add("chat");
+            String script = "{\"name\": \"hall\", \"size\": [2,2,2], \"seed\": 1, "
+                    + "\"palette\": {\"wall\": \"minecraft:stone\"}, "
+                    + "\"ops\": [{\"op\": \"box\", \"from\": [0,0,0], \"to\": [1,1,1], \"block\": \"wall\"}]}";
+            Map<String, Object> response = Map.of("choices", List.of(Map.of("message", Map.of("content", script))));
+            sendJson(exchange, MiniJson.write(response));
+        });
+        server.start();
+
+        LemonadeSettings settings = new LemonadeSettings("http://127.0.0.1:" + server.getAddress().getPort(),
+                "/api/v1", "test-model", "", 5, 10, 20, 0.4, 0.9, 512, 3, 2, 32);
+        LemonadeClient client = new LemonadeClient(settings, Logger.getLogger("test"));
+        SchematicLibrary library = SchematicLibrary.open(tempDir.resolve("schematics"));
+        GenerationService service = new GenerationService(client, testConfig(settings), library, tempDir.resolve("failed"));
+
+        GenerationService.GenerationResult result = service.generate("a small hall", null);
+
+        assertTrue(result.success());
+        assertEquals(List.of("pull", "load", "chat"), pathsHit, "pull and load must both happen, in order, before the first chat request");
+    }
+
+    @Test
+    void generateFailsWithoutCallingChatCompletionsWhenThePullFails(@TempDir Path tempDir) throws IOException {
+        List<String> pathsHit = new java.util.ArrayList<>();
+
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/api/v1/pull", exchange -> {
+            pathsHit.add("pull");
+            sendJsonWithStatus(exchange, 404, "{\"detail\":\"no such model\"}");
+        });
+        server.createContext("/api/v1/chat/completions", exchange -> {
+            pathsHit.add("chat");
+            sendJson(exchange, "{\"choices\":[{\"message\":{\"content\":\"{}\"}}]}");
+        });
+        server.start();
+
+        LemonadeSettings settings = new LemonadeSettings("http://127.0.0.1:" + server.getAddress().getPort(),
+                "/api/v1", "no-such-model", "", 5, 10, 20, 0.4, 0.9, 512, 3, 2, 32);
+        LemonadeClient client = new LemonadeClient(settings, Logger.getLogger("test"));
+        SchematicLibrary library = SchematicLibrary.open(tempDir.resolve("schematics"));
+        GenerationService service = new GenerationService(client, testConfig(settings), library, tempDir.resolve("failed"));
+
+        GenerationService.GenerationResult result = service.generate("a small hall", null);
+
+        assertFalse(result.success());
+        assertTrue(result.errorMessage().contains("no-such-model"));
+        assertEquals(List.of("pull"), pathsHit, "chat/completions must never be called once the pull fails");
+    }
+
     private static WorldEditCraftConfig testConfig(LemonadeSettings settings) {
         return new WorldEditCraftConfig(
                 settings,
@@ -123,10 +188,20 @@ class GenerationServiceTest {
         );
     }
 
+    /** Stubs /api/v1/pull and /api/v1/load with a bare "success" — for tests whose focus is the repair loop, not model management. */
+    private static void registerModelManagementHandlers(HttpServer server) {
+        server.createContext("/api/v1/pull", exchange -> sendJson(exchange, "{\"status\":\"success\",\"message\":\"Installed model: test-model\"}"));
+        server.createContext("/api/v1/load", exchange -> sendJson(exchange, "{\"status\":\"success\",\"message\":\"Loaded model: test-model\"}"));
+    }
+
     private static void sendJson(com.sun.net.httpserver.HttpExchange exchange, String body) throws IOException {
+        sendJsonWithStatus(exchange, 200, body);
+    }
+
+    private static void sendJsonWithStatus(com.sun.net.httpserver.HttpExchange exchange, int status, String body) throws IOException {
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().add("Content-Type", "application/json");
-        exchange.sendResponseHeaders(200, bytes.length);
+        exchange.sendResponseHeaders(status, bytes.length);
         try (OutputStream out = exchange.getResponseBody()) {
             out.write(bytes);
         }
