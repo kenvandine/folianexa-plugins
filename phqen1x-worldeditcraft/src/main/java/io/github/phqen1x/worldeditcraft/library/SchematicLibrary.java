@@ -1,11 +1,16 @@
 package io.github.phqen1x.worldeditcraft.library;
 
+import io.github.phqen1x.worldeditcraft.llm.MiniJson;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -66,7 +71,7 @@ public final class SchematicLibrary {
     }
 
     /** Returns the slug actually used (the requested one, or that name with a numeric suffix on a collision). */
-    public String save(String requestedName, byte[] schematicBytes, SchematicRecord meta) {
+    public String save(String requestedName, byte[] schematicBytes, SchematicRecord meta, List<MarkerRecord> markers) {
         String slug = SLUG_PATTERN.matcher(requestedName).matches() && requestedName.length() <= MAX_SLUG_LENGTH
                 ? requestedName
                 : slugify(requestedName);
@@ -84,6 +89,7 @@ public final class SchematicLibrary {
 
         try {
             Files.write(schemPath(finalSlug), schematicBytes);
+            writeMarkers(finalSlug, markers);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -108,6 +114,19 @@ public final class SchematicLibrary {
         return index.get(name);
     }
 
+    /** Empty if {@code name} has no markers, or no such schematic at all. */
+    public List<MarkerRecord> loadMarkers(String name) {
+        Path path = markersPath(name);
+        if (!Files.exists(path)) {
+            return List.of();
+        }
+        try {
+            return readMarkers(Files.readString(path));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public List<SchematicRecord> list(SchematicQuery query) {
         return index.search(query);
     }
@@ -122,6 +141,7 @@ public final class SchematicLibrary {
         }
         try {
             Files.deleteIfExists(schemPath(name));
+            Files.deleteIfExists(markersPath(name));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -135,6 +155,9 @@ public final class SchematicLibrary {
         }
         try {
             Files.move(schemPath(oldName), schemPath(newName));
+            if (Files.exists(markersPath(oldName))) {
+                Files.move(markersPath(oldName), markersPath(newName));
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -144,6 +167,54 @@ public final class SchematicLibrary {
 
     private Path schemPath(String name) {
         return directory.resolve(name + ".schem");
+    }
+
+    private Path markersPath(String name) {
+        return directory.resolve(name + ".markers.json");
+    }
+
+    private void writeMarkers(String name, List<MarkerRecord> markers) throws IOException {
+        Path path = markersPath(name);
+        if (markers.isEmpty()) {
+            Files.deleteIfExists(path);
+            return;
+        }
+        List<Object> entries = new ArrayList<>();
+        for (MarkerRecord marker : markers) {
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("id", marker.id());
+            entry.put("x", marker.x());
+            entry.put("y", marker.y());
+            entry.put("z", marker.z());
+            entry.put("meta", marker.meta());
+            entries.add(entry);
+        }
+        Files.writeString(path, MiniJson.write(Map.of("markers", entries)));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<MarkerRecord> readMarkers(String json) {
+        Object parsed = MiniJson.parse(json);
+        if (!(parsed instanceof Map<?, ?> root) || !(root.get("markers") instanceof List<?> list)) {
+            return List.of();
+        }
+        List<MarkerRecord> markers = new ArrayList<>();
+        for (Object entry : list) {
+            if (!(entry instanceof Map<?, ?> map)) {
+                continue;
+            }
+            Map<String, Object> meta = map.get("meta") instanceof Map<?, ?> metaMap
+                    ? (Map<String, Object>) metaMap
+                    : Map.of();
+            markers.add(new MarkerRecord(
+                    String.valueOf(map.get("id")),
+                    ((Number) map.get("x")).intValue(),
+                    ((Number) map.get("y")).intValue(),
+                    ((Number) map.get("z")).intValue(),
+                    meta
+            ));
+        }
+        return markers;
     }
 
     private void persistIndex() {

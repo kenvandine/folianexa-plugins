@@ -3,24 +3,33 @@ package io.github.phqen1x.worldeditcraft;
 import io.github.phqen1x.worldeditcraft.library.SchematicQuery;
 import io.github.phqen1x.worldeditcraft.library.SchematicRecord;
 import io.github.phqen1x.worldeditcraft.llm.LemonadeClient;
+import io.github.phqen1x.worldeditcraft.voxel.Transform;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 /**
  * {@code /wec} dispatch. Each branch checks its own permission node (see
  * {@code plugin.yml}) and hands off to {@link GenerationService}/{@link
- * io.github.phqen1x.worldeditcraft.library.SchematicLibrary} on the async
- * scheduler — nothing here touches a block or an entity, so nothing here
- * needs a region scheduler. Placement ({@code paste}/{@code preview}/
- * {@code undo}/{@code cancel}) is the one piece of the design not yet
- * implemented in this build — see the plugin README for milestone status.
- * {@code set} is a small extension beyond the design doc's own command
- * table: it lets an operator point at a different Lemonade host or
- * switch models without hand-editing {@code config.yml}.
+ * PasteService}/{@link io.github.phqen1x.worldeditcraft.library.SchematicLibrary}.
+ * {@code generate}/{@code list}/{@code info}/{@code delete}/{@code rename}/
+ * {@code status}/{@code reload}/{@code set} never touch a block or an
+ * entity and run entirely on the async scheduler. {@code paste}/{@code
+ * undo}/{@code cancel} hand off to {@link PasteService}, which is the
+ * one place in this plugin that reaches the region scheduler — see its
+ * class docs, and {@link io.github.phqen1x.worldeditcraft.paste.PasteEngine}'s,
+ * for what's real versus what a live Folia server still needs to
+ * confirm. {@code regen}/{@code preview}/{@code tag}/{@code import}/
+ * {@code export} are the remaining pieces not yet implemented — see the
+ * plugin README for milestone status. {@code set} is a small extension
+ * beyond the design doc's own command table: it lets an operator point
+ * at a different Lemonade host or switch models without hand-editing
+ * {@code config.yml}.
  */
 final class WorldEditCraftCommand implements CommandExecutor {
 
@@ -49,7 +58,10 @@ final class WorldEditCraftCommand implements CommandExecutor {
             case "status" -> handleStatus(sender);
             case "reload" -> handleReload(sender);
             case "set" -> handleSet(sender, label, args);
-            case "regen", "preview", "paste", "undo", "cancel", "tag", "import", "export" ->
+            case "paste" -> handlePaste(sender, label, args);
+            case "undo" -> handleUndo(sender);
+            case "cancel" -> handleCancel(sender);
+            case "regen", "preview", "tag", "import", "export" ->
                     sender.sendMessage("'" + args[0] + "' isn't implemented in this build yet — see the plugin README's milestone status.");
             default -> sender.sendMessage(usage(label));
         }
@@ -62,21 +74,129 @@ final class WorldEditCraftCommand implements CommandExecutor {
             return;
         }
         if (args.length < 2) {
-            sender.sendMessage("Usage: /" + label + " generate <prompt...>");
+            sender.sendMessage("Usage: /" + label + " generate <prompt...> [--paste]");
             return;
         }
-        String brief = String.join(" ", List.of(args).subList(1, args.length));
+
+        List<String> rest = new ArrayList<>(List.of(args).subList(1, args.length));
+        boolean placeImmediately = rest.remove("--paste");
+        String brief = String.join(" ", rest);
+        if (brief.isBlank()) {
+            sender.sendMessage("Usage: /" + label + " generate <prompt...> [--paste]");
+            return;
+        }
+        if (placeImmediately && !(sender instanceof Player)) {
+            sender.sendMessage("--paste needs a player to place at — generate without it and use /wec paste <name> instead.");
+            return;
+        }
+
         sender.sendMessage("Asking Lemonade to generate: " + brief);
 
         plugin.runAsync(() -> {
             GenerationService.GenerationResult result = plugin.generationService().generate(brief, null);
-            if (result.success()) {
-                sender.sendMessage("Generated '" + result.slug() + "' in " + result.attempts() + " attempt(s). "
-                        + "Placement (/wec paste) isn't implemented in this build yet — the .schem file is in the library.");
-            } else {
+            if (!result.success()) {
                 sender.sendMessage("Generation failed after " + result.attempts() + " attempt(s): " + result.errorMessage());
+                return;
+            }
+            sender.sendMessage("Generated '" + result.slug() + "' in " + result.attempts() + " attempt(s).");
+            if (placeImmediately) {
+                PasteService.PasteRequest request = new PasteService.PasteRequest(result.slug(), (Player) sender, 0, Transform.Flip.NONE, false);
+                plugin.pasteService().paste(request, sender::sendMessage);
+            } else {
+                sender.sendMessage("Use /wec paste " + result.slug() + " to place it.");
             }
         });
+    }
+
+    private void handlePaste(CommandSender sender, String label, String[] args) {
+        if (!sender.hasPermission("worldeditcraft.paste")) {
+            sender.sendMessage("You don't have permission to do that.");
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Only players can paste — a paste places blocks at your current position.");
+            return;
+        }
+        if (args.length < 2) {
+            sender.sendMessage("Usage: /" + label + " paste <name> [--rot 90|180|270] [--flip x|z] [--no-air]");
+            return;
+        }
+
+        String name = args[1];
+        int rotation = 0;
+        Transform.Flip flip = Transform.Flip.NONE;
+        boolean skipAir = false; // default: place air too, literally clearing the target volume to match the schematic
+
+        for (int i = 2; i < args.length; i++) {
+            switch (args[i].toLowerCase(Locale.ROOT)) {
+                case "--rot" -> {
+                    if (i + 1 >= args.length) {
+                        sender.sendMessage("--rot needs a value (90, 180, or 270).");
+                        return;
+                    }
+                    try {
+                        rotation = Integer.parseInt(args[++i]);
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage("Invalid --rot value: '" + args[i] + "'.");
+                        return;
+                    }
+                }
+                case "--flip" -> {
+                    if (i + 1 >= args.length) {
+                        sender.sendMessage("--flip needs a value (x or z).");
+                        return;
+                    }
+                    flip = switch (args[++i].toLowerCase(Locale.ROOT)) {
+                        case "x" -> Transform.Flip.X;
+                        case "z" -> Transform.Flip.Z;
+                        default -> Transform.Flip.NONE;
+                    };
+                }
+                case "--no-air" -> skipAir = true;
+                default -> {
+                    // ignore unrecognized flags rather than failing the whole command
+                }
+            }
+        }
+
+        if (rotation % 90 != 0) {
+            sender.sendMessage("--rot must be a multiple of 90.");
+            return;
+        }
+
+        PasteService.PasteRequest request = new PasteService.PasteRequest(name, player, rotation, flip, skipAir);
+        plugin.runAsync(() -> plugin.pasteService().paste(request, sender::sendMessage));
+    }
+
+    private void handleUndo(CommandSender sender) {
+        if (!sender.hasPermission("worldeditcraft.paste")) {
+            sender.sendMessage("You don't have permission to do that.");
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Only players can undo — undo restores blocks in your current world.");
+            return;
+        }
+        plugin.runAsync(() -> {
+            boolean started = plugin.pasteService().undo(player, sender::sendMessage);
+            if (!started) {
+                sender.sendMessage("Nothing to undo in this world.");
+            }
+        });
+    }
+
+    private void handleCancel(CommandSender sender) {
+        if (!sender.hasPermission("worldeditcraft.paste")) {
+            sender.sendMessage("You don't have permission to do that.");
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Only players can cancel a paste.");
+            return;
+        }
+        sender.sendMessage(plugin.pasteService().cancel(player)
+                ? "Cancelling your in-flight paste..."
+                : "You don't have an in-flight paste to cancel.");
     }
 
     private void handleList(CommandSender sender, String[] args) {

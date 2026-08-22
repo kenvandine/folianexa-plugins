@@ -72,11 +72,78 @@ and unit-tested:
   mirror the pattern in this repo's `hungergames/ConfigLoader`. Every
   `lemonade.*` key can also be changed in-game and persisted to disk
   with `/wec set` — see below — rather than hand-editing the file.
-- **The `/wec` command surface**: `generate`, `list`, `info`, `delete`,
-  `rename`, `status`, `reload`, `set` are real. `regen`, `preview`,
-  `paste`, `undo`, `cancel`, `tag`, `import`, `export` respond with a
-  clear "not implemented yet" message rather than silently doing
-  nothing.
+- **The paste engine** — `PastePlan` (pure: applies a `Transform` and an
+  origin, buckets placements by chunk, splits each chunk into
+  `paste.blocks-per-tick`-sized batches, and separates pass 1 from pass
+  2), `PasteEngine` (executes a plan on `Bukkit.getRegionScheduler()`,
+  one batch per tick per chunk, following `campus-lobby`'s `SceneBuilder`
+  precedent), `PasteJob`/`PasteProgress` (progress + cancellation,
+  thread-safe counters), and `UndoJournal` (captures every overwritten
+  block state and replays them in reverse for `/wec undo`). `PastePlan`
+  — the part the design doc calls out as "what makes the hard part
+  unit-testable without a server" — is fully unit-tested: chunk
+  bucketing, per-tick batching, the pass-1/pass-2 split, transform +
+  origin composition, and marker translation. `PasteEngine` itself is
+  the one class in this build that has never run against a live Folia
+  server — see "What's real vs. unverified" below and the class's own
+  javadoc for exactly what a live server needs to confirm before it's
+  trusted, including a **deliberate simplification** of the design
+  doc's pass-ordering rule (a single global pass-1-before-pass-2
+  barrier rather than a per-chunk neighbour computation — still
+  correct, just less parallel across a paste spanning many chunks).
+- **The `/wec` command surface**: `generate` (with a `--paste` flag),
+  `list`, `info`, `delete`, `rename`, `status`, `reload`, `set`,
+  `paste`, `undo`, `cancel` are real. `regen`, `preview`, `tag`,
+  `import`, `export` respond with a clear "not implemented yet" message
+  rather than silently doing nothing.
+
+### `/wec paste` / `undo` / `cancel`
+
+```
+/wec paste ruined_forge_hall
+/wec paste ruined_forge_hall --rot 90 --flip x --no-air
+/wec generate a small stone watchtower --paste
+/wec undo
+/wec cancel
+```
+
+Requires `worldeditcraft.paste`, and a player sender (a paste needs a
+position — there's no `--at x y z` support yet, it always pastes at
+your current location). `--rot` is 90/180/270; `--flip` is `x` or `z`;
+`--no-air` skips air voxels instead of placing them literally (the
+default paste clears the target volume to match the schematic's own
+empty space, same as `paste.clear-volume-first` clears the surrounding
+footprint first when that config option is on). `/wec undo` restores
+the most recent paste in your current world (up to `paste.undo-history`
+kept); `/wec cancel` stops your own in-flight paste after its current
+batch.
+
+**Known limitations**, on top of the pass-ordering simplification
+above:
+
+- **Block entity payloads are best-effort.** A `block_entity` op's base
+  block is always placed; only sign text (`data.lines`) is actually
+  applied from its NBT-ish payload. Chest contents, spawner types,
+  banner patterns, and everything else a real `.schem`'s
+  `BlockEntities` can carry are silently dropped on paste. Full NBT
+  application would need either per-type Bukkit API calls for every
+  block entity kind, or NMS reflection this codebase deliberately
+  avoids (see the design doc's own "no shading" stance).
+- **`AttachmentSensitivity`'s pass-1/pass-2 classification is a keyword
+  heuristic** over the block id (`torch`, `door`, `rail`, `sand`, ...),
+  not a real block-property lookup — same documented-gap shape as
+  `block-policy: vanilla`'s check below. It covers the categories the
+  design doc names explicitly; it will miss edge cases outside them.
+- **`paste.max-concurrent-jobs` is a global limit**, not per-player —
+  the design doc doesn't specify which, and a global cap is the safer
+  default for a shared server.
+- **No boss bar.** Progress is reported as a chat message on
+  completion, not a live boss bar with placed/total/ETA as the design
+  doc describes (`PasteProgress` computes an ETA; nothing surfaces it
+  live yet).
+- `/wec generate --size`/`--name` and `/wec paste --at x y z` are not
+  implemented — `generate` always uses the model's own chosen size and
+  name, and `paste` always targets your current position.
 
 ### `/wec set` — configuring Lemonade without editing `config.yml`
 
@@ -110,21 +177,17 @@ run `/wec reload` instead of using `/wec set`.
 
 ## What's not implemented yet
 
-**The paste engine.** `/wec generate` produces and saves a `.schem` file
-but never places it — there is no `PastePlan`/`PasteEngine`/`PasteJob`/
-`UndoJournal` in this build. This is the single biggest remaining piece:
-the design doc's chunk-bucketed, per-tick-budgeted, two-pass region
-scheduler (see `01-worldeditcraft-design.md`'s "The paste engine" and
-`07-folia-safety.md`), modeled on `campus-lobby`'s `SceneBuilder`. Until
-it exists, `/wec paste`/`preview`/`undo`/`cancel` and the `--paste` flag
-on `generate` all report "not implemented".
-
-Also not implemented: `/wec regen` (needs the sidecar's stored build
-script, which `GenerationService` doesn't yet write — only the `.schem`
-and the index record), `/wec import`/`export`, `/wec tag`, the shared
-`InferenceQueue`/`-api` artifact for a future Phqen1xRPG (M3 in the
-design doc's roadmap), the WorldEdit delegate-paste adapter, and the
-`response_format` structured-output probe.
+`/wec regen` (needs the sidecar's stored build script, which
+`GenerationService` doesn't yet write — only the `.schem` and the index
+record — see markers' own sidecar for the pattern this would follow),
+`/wec preview` (a temporary paste auto-undone after
+`paste.preview-seconds` — straightforward to build on top of the paste
+engine now that it exists, just not wired up yet), `/wec import`/
+`export`, `/wec tag`, the shared `InferenceQueue`/`-api` artifact for a
+future Phqen1xRPG (M3 in the design doc's roadmap), the WorldEdit
+delegate-paste adapter, and the `response_format` structured-output
+probe. See the paste engine's own section above for what's implemented
+there versus simplified/deferred.
 
 ## Known gap: `block-policy: vanilla` isn't a real registry check
 
@@ -222,9 +285,17 @@ Lemonade server. What's grounded:
   published [Sponge Schematic Specification](https://github.com/SpongePowered/Schematic-Specification)
   for both versions, not guessed.
 - Every pure class (`schem`, `voxel`, `dsl`, `llm/MiniJson`+`JsonCoercion`,
-  `library`) is unit-tested, including the transposition-catching
-  asymmetric-fixture round-trip test and a real repair-loop test against
-  a real fake HTTP server.
+  `library`, and `paste/PastePlan`+`PasteJob`+`PasteProgress`+
+  `UndoJournal`+`AttachmentSensitivity`) is unit-tested, including the
+  transposition-catching asymmetric-fixture round-trip test, a real
+  repair-loop test against a real fake HTTP server, and `PastePlan`'s
+  bucketing/batching/pass-split/transform-composition tests — 140 tests
+  total.
+- `PasteEngine`'s region-scheduler usage (`Bukkit.getRegionScheduler().run`/
+  `runDelayed`, chunk-bucketed submission, FIFO-within-a-chunk ordering
+  for the clear-before-pass-1 sequencing) was written to match
+  `campus-lobby`'s real, in-repo `SceneBuilder` precedent line for line
+  where the pattern is the same — not invented from scratch.
 
 What's unverified, matching every other plugin in this repo at this
 stage: whether a `.schem` this writer produces actually opens in real
@@ -232,9 +303,16 @@ WorldEdit (the M1 exit criterion in the design doc's roadmap — "the
 highest-value early check" per the design doc, and it needs nothing but
 a Paper server with WorldEdit and one generated file); whether a real
 Lemonade server + real model produces valid build scripts at a useful
-rate; and everything about the (not yet written) paste engine's Folia
-behavior under load. This plugin has not been installed or started
-against a live server in this development environment.
+rate; and, the single largest unknown in this build, **everything about
+`PasteEngine`'s actual behavior on a live Folia server** — it has never
+placed a real block. The design doc's own `07-folia-safety.md` lists
+exactly what to check before trusting it: paste a large schematic that
+spans many chunks and watch for thread-check failures in the log; paste
+while players are standing in the target area; cancel a paste mid-run
+and confirm it unwinds cleanly and `/wec undo` still works; reload
+config during a paste. None of that has been exercised — this plugin
+has not been installed or started against a live server in this
+development environment.
 
 ## License
 

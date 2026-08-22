@@ -4,6 +4,7 @@ import io.github.phqen1x.worldeditcraft.dsl.BuildScriptInterpreter;
 import io.github.phqen1x.worldeditcraft.dsl.BuildScriptParser;
 import io.github.phqen1x.worldeditcraft.dsl.BuildScriptValidator;
 import io.github.phqen1x.worldeditcraft.dsl.ValidationIssue;
+import io.github.phqen1x.worldeditcraft.library.MarkerRecord;
 import io.github.phqen1x.worldeditcraft.library.SchematicLibrary;
 import io.github.phqen1x.worldeditcraft.library.SchematicRecord;
 import io.github.phqen1x.worldeditcraft.llm.JsonCoercion;
@@ -181,7 +182,10 @@ public final class GenerationService {
         SchematicRecord record = new SchematicRecord(name, preliminaryMeta.author(), preliminaryMeta.dateEpochMillis(),
                 brief, preliminaryMeta.model(), List.of(), checksum,
                 interpreted.grid().width(), interpreted.grid().height(), interpreted.grid().length());
-        return library.save(name, schemBytes, record);
+        List<MarkerRecord> markers = interpreted.markers().stream()
+                .map(marker -> new MarkerRecord(marker.id(), marker.position()[0], marker.position()[1], marker.position()[2], marker.meta()))
+                .toList();
+        return library.save(name, schemBytes, record, markers);
     }
 
     private static Map<String, String> repairMessage(List<ValidationIssue> issues) {

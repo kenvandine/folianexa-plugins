@@ -19,11 +19,16 @@ public final class WorldEditCraftPlugin extends JavaPlugin {
     private volatile LemonadeClient lemonadeClient;
     private volatile SchematicLibrary library;
     private volatile GenerationService generationService;
+    private PasteService pasteService;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         reloadWorldEditCraftConfig();
+        // Created once, not in reloadWorldEditCraftConfig() — PasteService
+        // owns in-memory state (in-flight jobs, undo history) a reload
+        // must not discard; see its own class docs.
+        this.pasteService = new PasteService(this, getDataFolder().toPath().resolve("undo"));
         getCommand("wec").setExecutor(new WorldEditCraftCommand(this));
     }
 
@@ -50,6 +55,10 @@ public final class WorldEditCraftPlugin extends JavaPlugin {
 
     GenerationService generationService() {
         return generationService;
+    }
+
+    PasteService pasteService() {
+        return pasteService;
     }
 
     /**
