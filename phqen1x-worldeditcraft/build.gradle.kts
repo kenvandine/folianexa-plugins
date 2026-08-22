@@ -56,9 +56,11 @@ tasks.processResources {
     // Stamps plugin.yml's version: '${version}' placeholder with this
     // build's actual project.version, so it's never hand-edited out of
     // sync with the jar's own version (see the `version = ...` comment
-    // above).
+    // above). Captured at configuration time since Task.project is
+    // deprecated at execution time (breaks config-cache compatibility).
+    val pluginVersion = project.version.toString()
     filesMatching("plugin.yml") {
-        expand("version" to project.version.toString())
+        expand("version" to pluginVersion)
     }
 }
 
