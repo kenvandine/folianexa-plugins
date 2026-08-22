@@ -1,0 +1,37 @@
+lemonade:
+  base-url: "http://lemonade.local:13305"   # the LAN inference host
+  api-path: "/api/v1"                       # Lemonade's canonical prefix; "/v1" also works
+  model: ""                                 # blank = first model from /api/v1/models
+  api-key: ""                               # sent as a bearer token when non-blank
+  connect-timeout-seconds: 10
+  request-timeout-seconds: 180
+  temperature: 0.4
+  top-p: 0.9
+  max-tokens: 8192
+  max-attempts: 3                           # 1 initial + 2 repair rounds
+  max-concurrent-requests: 2                # shared with Phqen1xRPG
+  queue-capacity: 32
+
+generation:
+  max-dimension: 128                        # per axis
+  max-volume: 400000                        # W*H*L, checked before rasterizing
+  max-ops: 400
+  default-size: [32, 24, 32]
+  block-policy: vanilla                      # vanilla | allowlist | any
+  block-allowlist: []
+  keep-failed-responses: true                # write rejected model output for debugging
+
+paste:
+  blocks-per-tick: 2048
+  clear-volume-first: false
+  unknown-block: air                        # air | stone | abort
+  undo-history: 10
+  max-concurrent-jobs: 2
+  preview-seconds: 60
+
+library:
+  directory: "schematics"
+  max-entries: 500
+
+worldedit:
+  delegate-paste: false                      # use WorldEdit's API if it happens to be installed

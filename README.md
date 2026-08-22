@@ -19,6 +19,7 @@ to submit a plugin here for catalog review).
 | `folianexa-stats/` | Reports per-player kills/deaths/blocks-mined/playtime to mgmt's public player hub (PLAN.md §7A); softdepends on AuraSkills and Vault | `FoliaNexaStats` |
 | `hungergames/` | Configurable battle-royale minigame — queue-based arenas, shrinking world border, config-only maps and randomized "twists" | `HungerGames` |
 | `Solstice/` | Folia-native seasons, calendar, and temperature plugin — biome recoloring, ambient visuals, seasonal events | `Solstice` |
+| `phqen1x-worldeditcraft/` | Natural-language structure generation via a LAN Lemonade Server — `/wec generate` turns a prompt into a real Sponge v3 `.schem`, filed in a permanent library. First milestone (schematic core + generate pipeline); no paste engine yet — see its own README | `Phqen1xWorldEditCraft` (not yet catalogued) |
 
 ## Adding a new plugin
 
