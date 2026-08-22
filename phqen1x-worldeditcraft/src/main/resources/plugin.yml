@@ -1,0 +1,25 @@
+name: Phqen1xWorldEditCraft
+version: '${version}'
+main: io.github.phqen1x.worldeditcraft.WorldEditCraftPlugin
+api-version: '1.21'
+folia-supported: true
+load: POSTWORLD
+
+commands:
+  wec:
+    description: Generate, paste, and manage natural-language Minecraft structures.
+    usage: /wec <generate|regen|list|info|preview|paste|undo|cancel|rename|tag|delete|import|export|status|reload|set>
+
+permissions:
+  worldeditcraft.generate:
+    description: Ask Lemonade to generate (or regenerate) a schematic.
+    default: op
+  worldeditcraft.paste:
+    description: Paste, preview, undo, or cancel a schematic placement.
+    default: op
+  worldeditcraft.library:
+    description: Browse and manage the schematic library.
+    default: op
+  worldeditcraft.admin:
+    description: View Lemonade/queue status, reload config, and change lemonade.* settings with /wec set.
+    default: op
