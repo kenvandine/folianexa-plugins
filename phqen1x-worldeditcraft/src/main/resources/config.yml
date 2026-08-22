@@ -1,7 +1,7 @@
 lemonade:
   base-url: "http://lemonade.local:13305"   # the LAN inference host
   api-path: "/api/v1"                       # Lemonade's canonical prefix; "/v1" also works
-  model: ""                                 # blank = first model from /api/v1/models
+  model: ""                                 # blank = first model from /api/v1/models — see README.md "Choosing a model" for recommendations (e.g. Qwen3-Coder-30B-A3B-Instruct-GGUF)
   api-key: ""                               # sent as a bearer token when non-blank
   connect-timeout-seconds: 10
   request-timeout-seconds: 180

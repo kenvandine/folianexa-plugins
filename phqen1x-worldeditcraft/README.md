@@ -121,6 +121,49 @@ See `config.yml` for the full set of tunables (timeouts, sampling,
 generation caps, paste tuning, library location) — every key mirrors the
 design doc's config table exactly.
 
+### Choosing a model
+
+`lemonade.model` must match a model id exactly as Lemonade itself reports
+it — check with `lemonade-server list` on the inference host, or `GET
+{base-url}{api-path}/models` (what `/wec status` calls). Leaving it
+blank picks whichever model `/api/v1/models` returns first, which is
+fine for a single-model box but should be pinned once more than one
+model is loaded.
+
+Build-script generation is a structured-output, code-generation task
+(see the design doc's "Model choice"), so an instruction-tuned **code**
+model tends to do noticeably better here than a same-size general chat
+model — the DSL's JSON shape is closer to what a coder model was tuned
+on. The models below are Lemonade's own built-in catalog entries
+(`src/cpp/resources/server_models.json` in the
+[lemonade-sdk/lemonade](https://github.com/lemonade-sdk/lemonade) repo)
+tagged `coding`, so they install with a plain `lemonade-server pull
+<id>` and need nothing hand-configured beyond `lemonade.model`:
+
+| Model id (`lemonade.model`) | Size | Why |
+| --- | --- | --- |
+| `Qwen3-Coder-30B-A3B-Instruct-GGUF` | ~18.6 GB | **Recommended default.** Mixture-of-experts with only ~3B active parameters per token, so it runs noticeably faster than its file size implies. Tagged `coding` + `tool-calling` + `hot` (suggested) in Lemonade's own catalog. This is also the exact model the design doc's own `/wec status` worked example shows — not a coincidence, it's Lemonade's flagship coding-suggested model as of this writing. |
+| `Qwen2.5-Coder-32B-Instruct-GGUF` | ~19.9 GB | A dense (non-MoE) alternative if you'd rather avoid MoE routing quirks, or want the previous Qwen coder generation specifically. Slower per token than the A3B model above at a similar file size. |
+| `Devstral-Small-2507-GGUF` | ~14.3 GB | Mistral's agentic/tool-calling coding model — a reasonable pick if you're already standardized on Mistral elsewhere, or want a smaller footprint than the two above. |
+| `Qwen3-4B-Instruct-2507-GGUF` | ~2.5 GB | **Lightweight fallback**, not coding-specialized. For a box too small for anything above, or for quickly confirming the pipeline (config, connectivity, the repair loop) works before investing in a bigger download. Expect a lower first-try build-script validity rate than the coder models — exactly the tradeoff the design doc's M2 exit criterion #2 ("twenty varied prompts, measured") exists to quantify. |
+
+All four use Lemonade's `llamacpp` (GGUF) backend, so they run on any
+GPU or CPU the LAN host has — no AMD-specific hardware required. If the
+inference host *is* an AMD Ryzen AI machine, Lemonade also ships
+NPU/Hybrid-accelerated ONNX builds of `Qwen2.5-Coder` (0.5B/1.5B/7B) and
+`CodeLlama-7b-Instruct` that run without a discrete GPU at all — see
+`lemonade-server list --all` on that host for the exact ids
+(`*-NPU`/`*-Hybrid` suffixes).
+
+**Unverified** (same caveat the design doc gives its own example):
+which of these actually produces usable build scripts, and at what
+first-try/post-repair success rate, hasn't been measured against a real
+Lemonade server in this environment. The table above is a grounded
+*starting point* — it reflects Lemonade's own "suggested"/`coding`-tagged
+catalog, not a benchmark — not a substitute for the design doc's M2
+exit criterion of actually running twenty varied prompts and writing
+down the numbers once a real server is available.
+
 ## What's real vs. unverified
 
 Not built, not run against a real Folia server, not run against a real
