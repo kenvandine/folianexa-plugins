@@ -178,6 +178,23 @@ public final class BuildScriptValidator {
             }
         }
 
+        for (String tripleField : List.of("from", "to", "at")) {
+            if (op.has(tripleField) && op.fieldIntTriple(tripleField) == null) {
+                issues.add(ValidationIssue.error(op.sourceIndex(),
+                        "Operation " + op.sourceIndex() + " (" + op.op() + ")'s '" + tripleField + "' is not a valid [x, y, z] triple.",
+                        "Operation " + op.sourceIndex() + " (" + op.op() + ")'s '" + tripleField
+                                + "' must be a `[x, y, z]` array of three numbers. This operation was dropped — fix its shape."));
+                return null;
+            }
+        }
+        if (op.has("region") && op.fieldRegion("region") == null) {
+            issues.add(ValidationIssue.error(op.sourceIndex(),
+                    "Operation " + op.sourceIndex() + " (" + op.op() + ")'s 'region' is not a valid [[x,y,z],[x,y,z]] pair.",
+                    "Operation " + op.sourceIndex() + " (" + op.op() + ")'s 'region' must be a `[[x,y,z], [x,y,z]]` "
+                            + "array of two coordinate triples. This operation was dropped — fix its shape."));
+            return null;
+        }
+
         int repeatCount = op.repeatCount();
         Map<String, Object> fields = new LinkedHashMap<>(op.fields());
         if (repeatCount > MAX_REPEAT_COUNT) {

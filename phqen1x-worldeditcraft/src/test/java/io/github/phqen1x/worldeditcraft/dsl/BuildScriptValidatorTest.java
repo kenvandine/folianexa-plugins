@@ -154,6 +154,34 @@ class BuildScriptValidatorTest {
     }
 
     @Test
+    void malformedRegionFieldDropsTheOpInsteadOfCrashingAtExecution() {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("region", "0,0,0 to 10,0,10"); // present, but not a [[x,y,z],[x,y,z]] pair
+        fields.put("block", "minecraft:stone");
+        List<BuildOp> ops = List.of(new BuildOp("floor", fields, 0));
+        BuildScript script = new BuildScript("t", new int[]{10, 10, 10}, 1, Map.of(), ops, "");
+
+        BuildScriptValidator.ValidationResult result = BuildScriptValidator.validate(script, DEFAULT_LIMITS);
+
+        assertTrue(result.executableOps().isEmpty());
+        assertTrue(result.issues().stream().anyMatch(ValidationIssue::triggersRepair));
+    }
+
+    @Test
+    void malformedTripleFieldDropsTheOpInsteadOfCrashingAtExecution() {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("at", List.of(0.0, 0.0)); // only two coordinates, not three
+        fields.put("block", "minecraft:stone");
+        List<BuildOp> ops = List.of(new BuildOp("place_block", fields, 0));
+        BuildScript script = new BuildScript("t", new int[]{10, 10, 10}, 1, Map.of(), ops, "");
+
+        BuildScriptValidator.ValidationResult result = BuildScriptValidator.validate(script, DEFAULT_LIMITS);
+
+        assertTrue(result.executableOps().isEmpty());
+        assertTrue(result.issues().stream().anyMatch(ValidationIssue::triggersRepair));
+    }
+
+    @Test
     void emptyOpsListAfterAllDroppedIsFatal() {
         List<BuildOp> ops = List.of(new BuildOp("unknown_op", Map.of(), 0));
         BuildScript script = new BuildScript("t", new int[]{10, 10, 10}, 1, Map.of(), ops, "");
