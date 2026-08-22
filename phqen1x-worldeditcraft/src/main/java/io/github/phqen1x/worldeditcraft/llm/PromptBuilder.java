@@ -29,9 +29,14 @@ public final class PromptBuilder {
 
         sb.append("Example:\n");
         sb.append("{\"name\": \"wayside_shrine\", \"size\": [9, 7, 9], \"seed\": 4412, ")
-                .append("\"palette\": {\"base\": \"minecraft:stone_bricks\"}, ")
+                .append("\"palette\": {\"base\": \"minecraft:stone_bricks\", \"floor\": \"minecraft:cobblestone\"}, ")
                 .append("\"ops\": [{\"op\": \"box\", \"from\": [0,0,0], \"to\": [8,0,8], \"block\": \"base\"}, ")
+                .append("{\"op\": \"floor\", \"region\": [[0,0,0],[8,0,8]], \"block\": \"floor\"}, ")
                 .append("{\"op\": \"marker\", \"at\": [4,1,4], \"id\": \"entrance\"}]}\n\n");
+
+        sb.append("Coordinate fields: from/to/at are each a single [x, y, z] triple. region is a PAIR of ")
+                .append("triples, [[x1,y1,z1],[x2,y2,z2]] — never an object like {\"from\":...,\"to\":...}. ")
+                .append("See the floor op in the example above.\n\n");
 
         sb.append("Available operations:\n");
         for (OpRegistry.OpSpec spec : OpRegistry.all()) {
