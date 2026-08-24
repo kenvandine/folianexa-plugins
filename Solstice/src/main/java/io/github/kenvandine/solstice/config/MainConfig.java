@@ -5,6 +5,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +22,7 @@ public record MainConfig(
         boolean snowIceEnabled,
         int snowIceBlocksPerTickPerRegion,
         boolean floraEnabled,
+        Map<String, Double> floraBiomeDensity,
         boolean winterCropsRequireRoof,
         double summerCropGrowthMultiplier,
         boolean summerHusks,
@@ -40,6 +42,15 @@ public record MainConfig(
         return enabledWorlds.isEmpty() || enabledWorlds.contains(worldName);
     }
 
+    /** Spawn-chance multiplier for a biome category (see biomes.yml); 0 disables flora there. */
+    public double floraDensityFor(String biomeCategory) {
+        Double density = floraBiomeDensity.get(biomeCategory);
+        if (density != null) {
+            return density;
+        }
+        return floraBiomeDensity.getOrDefault("default", 1.0);
+    }
+
     public static MainConfig load(FileConfiguration yaml) {
         ConfigurationSection worlds = yaml.getConfigurationSection("worlds");
         Set<String> enabled = new HashSet<>(worlds != null ? worlds.getStringList("enabled") : java.util.List.of());
@@ -51,6 +62,14 @@ public record MainConfig(
         starts.put(Season.SUMMER, readMonthDay(seasons, "summer", 4, 6));
         starts.put(Season.AUTUMN, readMonthDay(seasons, "autumn", 4, 9));
         starts.put(Season.WINTER, readMonthDay(seasons, "winter", 4, 12));
+
+        Map<String, Double> floraBiomeDensity = new HashMap<>();
+        ConfigurationSection floraDensity = yaml.getConfigurationSection("world-effects.flora.biome-density");
+        if (floraDensity != null) {
+            for (String category : floraDensity.getKeys(false)) {
+                floraBiomeDensity.put(category, floraDensity.getDouble(category, 1.0));
+            }
+        }
 
         return new MainConfig(
                 enabled,
@@ -64,6 +83,7 @@ public record MainConfig(
                 yaml.getBoolean("world-effects.snow-ice.enabled", true),
                 yaml.getInt("world-effects.snow-ice.blocks-per-tick-per-region", 8),
                 yaml.getBoolean("world-effects.flora.enabled", true),
+                floraBiomeDensity,
                 yaml.getBoolean("world-effects.crops.winter-requires-roof", true),
                 yaml.getDouble("world-effects.crops.summer-growth-multiplier", 2.0),
                 yaml.getBoolean("world-effects.mob-replacements.summer-husks", true),

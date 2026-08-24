@@ -37,6 +37,17 @@ world-effects:
     blocks-per-tick-per-region: 8
   flora:
     enabled: true
+    # Spawn-chance multiplier per biome category (categories are defined in biomes.yml).
+    # 1.0 = normal density, 0 = no flowers/berry bushes in that category, >1.0 = denser than normal.
+    # "default" applies to any biome not listed here (or not categorized in biomes.yml).
+    biome-density:
+      default: 1.0
+      temperate: 1.0
+      hot: 1.0
+      jungle: 1.0
+      savanna: 1.0
+      cold: 1.0
+      frozen: 1.0
   crops:
     winter-requires-roof: true
     summer-growth-multiplier: 2.0
