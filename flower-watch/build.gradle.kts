@@ -4,9 +4,20 @@
 // records that a block changed, not why — see README.md.
 //
 // Scaffolded by the folia-plugin-scaffold skill (FoliaNexa repo).
-// Targets Java 21 / paper-api 1.21.4-R0.1-SNAPSHOT, matching this
-// cluster's default engine version — see docs/plugin-dev/01-environment-setup.md
-// in the FoliaNexa repo for why these exact coordinates.
+// Targets Java 21, built against dev.folia:folia-api — this cluster's
+// actual running engine is Folia 26.2 (mgmt's EngineVersion singleton,
+// FoliaNexa's models.py), not the older paper-api 1.21.4 coordinate a
+// few of this repo's other plugins (campus-lobby, folianexa-stats,
+// hungergames) still target. Same reasoning as Solstice's own
+// build.gradle.kts: depending on plain paper-api instead here would
+// mean compiling against an engine version this cluster doesn't
+// actually run. See .java-version (read by .github/workflows/
+// release.yml) for why CI builds this under JDK 25 — folia-api's
+// 26.2.build.5-beta class files require a JDK 25+ javac to read off the
+// classpath even though this plugin's own emitted bytecode still
+// targets release 21 (options.release below), the same class-file-
+// version mismatch Solstice's build.gradle.kts documents in more
+// detail.
 
 plugins {
     java
@@ -20,19 +31,42 @@ group = "io.github.kenvandine.flowerwatch"
 // local `./gradlew build` (no property set) falls back to this default.
 version = (findProperty("releaseVersion") as String?) ?: "0.1.0"
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
+// No Java toolchain pin here (matching Solstice, unlike this repo's
+// paper-api-1.21.4-based plugins): folia-api's class files need the
+// compiler *running* this build to itself be JDK 25+, so pinning a JDK
+// 21 toolchain would make Gradle pick a JDK 21 javac that can't parse
+// them off the classpath at all. options.release below still
+// constrains FlowerWatch's own compiled output to release 21.
+tasks.withType<JavaCompile> {
+    options.release.set(21)
 }
 
 repositories {
     mavenCentral()
-    maven("https://repo.papermc.io/repository/maven-public/") // hosts io.papermc.paper:paper-api
+    maven("https://repo.papermc.io/repository/maven-public/") { // hosts dev.folia:folia-api
+        // folia-api publishes Gradle module metadata (redirected to from
+        // its POM) that declares a JVM-25 target-compatibility attribute.
+        // Even without a toolchain pin, Gradle's own attribute matching
+        // would reject it whenever the JVM running Gradle isn't 25+ (e.g.
+        // local `./gradlew` runs under a plain JDK 21 JAVA_HOME). Maven
+        // consumers, which ignore Gradle metadata entirely, never hit
+        // this. Falling back to POM-based resolution sidesteps it — see
+        // Solstice's identical repository block for the same fix.
+        metadataSources {
+            mavenPom()
+            artifact()
+            ignoreGradleMetadataRedirection()
+        }
+    }
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+    // Pinned to the same build Solstice already verified compiles and
+    // runs against this cluster's actual engine (26.2.build.6-beta is
+    // available too, as of when this was written — bump deliberately,
+    // not blindly, matching how this repo pins CoreProtect/Geyser
+    // versions elsewhere rather than tracking "latest").
+    compileOnly("dev.folia:folia-api:26.2.build.5-beta")
 
     // CoreProtect deliberately has NO dependency entry here — see
     // CoreProtectBridge's class doc for why (no working JitPack build,
@@ -41,8 +75,8 @@ dependencies {
 
     // FlowerMaterialsTest exercises real org.bukkit.Material constants
     // directly (the whole point of that class), so unlike a pure-domain
-    // test it needs paper-api on the test classpath too, not just compile.
-    testImplementation("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+    // test it needs folia-api on the test classpath too, not just compile.
+    testImplementation("dev.folia:folia-api:26.2.build.5-beta")
 
     testImplementation(platform("org.junit:junit-bom:5.10.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")

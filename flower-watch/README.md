@@ -21,6 +21,14 @@ FlowerWatch **never cancels or changes anything** — no auto-fix, no
 auto-revert. It only logs. Uninstalling it has zero effect on whatever is
 actually causing the bug; it's purely eyes on the problem.
 
+Built against `dev.folia:folia-api:26.2.build.5-beta` — this cluster's
+actual running engine (mgmt's `EngineVersion` singleton is `folia
+26.2`), not the older paper-api 1.21.4 coordinate a few of this repo's
+other plugins still target. Same reasoning as [Solstice](../Solstice)'s
+build.gradle.kts. Needs a JDK 25 present on whatever machine builds it
+(`.java-version` — `.github/workflows/release.yml` picks this up
+automatically); `gradlew` itself still only needs JDK 21 to launch.
+
 ## Install
 
 Standard FoliaNexa plugin install — build the jar (`./gradlew build`,
