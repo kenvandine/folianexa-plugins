@@ -43,7 +43,11 @@ public record MainConfig(
         return enabledWorlds.isEmpty() || enabledWorlds.contains(worldName);
     }
 
-    /** Spawn-chance multiplier for a biome category (see biomes.yml); 0 disables flora there. */
+    /**
+     * Spawn-chance multiplier for a biome category (see biomes.yml); 0 disables flora there.
+     * Biomes with no category (see {@link BiomesConfig#UNCATEGORIZED_CATEGORY}) fall through to
+     * this map's "default" entry rather than being treated as any specific category.
+     */
     public double floraDensityFor(String biomeCategory) {
         Double density = floraBiomeDensity.get(biomeCategory);
         if (density != null) {

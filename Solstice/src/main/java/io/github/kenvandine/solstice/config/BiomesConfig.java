@@ -15,9 +15,12 @@ import java.util.Map;
 
 /**
  * Parsed biomes.yml: per-category seasonal colors, plus which biomes fall into each category.
- * Any biome not explicitly categorized here falls back to "temperate" — see PLAN.md §4 on
+ * A biome not explicitly categorized here has no category of its own — see PLAN.md §4 on
  * classifying unknown/modded biomes; a live registry-temperature lookup is future work, this is
- * the static approximation for the first build.
+ * the static approximation for the first build. Consumers that want a color still fall back to
+ * "temperate" ({@link #colorsFor}); consumers like flora density instead see the distinct
+ * {@link #UNCATEGORIZED_CATEGORY} sentinel so they can apply their own fallback (e.g. config.yml's
+ * "default" biome-density entry) instead of silently being treated as "temperate".
  */
 public final class BiomesConfig {
 
@@ -25,6 +28,9 @@ public final class BiomesConfig {
     }
 
     public static final String FALLBACK_CATEGORY = "temperate";
+
+    /** Returned by {@link #categoryFor} for biomes with no entry in biomes.yml's categories. */
+    public static final String UNCATEGORIZED_CATEGORY = "__uncategorized__";
 
     private final Map<Biome, String> biomeToCategory;
     private final Map<String, Map<Season, RgbColors>> categoryColors;
@@ -95,8 +101,9 @@ public final class BiomesConfig {
         return map;
     }
 
+    /** @return the biome's configured category, or {@link #UNCATEGORIZED_CATEGORY} if none is set. */
     public String categoryFor(Biome biome) {
-        return biomeToCategory.getOrDefault(biome, FALLBACK_CATEGORY);
+        return biomeToCategory.getOrDefault(biome, UNCATEGORIZED_CATEGORY);
     }
 
     public RgbColors colorsFor(Biome biome, Season season) {
