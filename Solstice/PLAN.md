@@ -122,7 +122,9 @@ packet-level biome recoloring. That path is closed. See §6.
 Four seasons, default start dates: Spring **Mar 4**, Summer **Jun 4**, Autumn **Sep 4**, Winter **Dec 4**.
 
 **Spring** — forest leaves pink, oak→cherry leaves (1.20+, client-side, toggleable), cherry blossom
-falls, light-blue water tint, light-blue sky; flowers generate everywhere; winter snow and ice removed
+falls, light-blue water tint, light-blue sky; flowers generate everywhere by default, with density
+configurable per biome category (or disabled entirely) via `world-effects.flora.biome-density` in
+config.yml; winter snow and ice removed
 progressively (block-by-block early, accelerating later); heavy passive spawns (sheep, cows, pigs,
 rabbits, chickens) each with 3–5 babies; increased bee spawn rate; fireflies at night; day ≈ night.
 Temperature 5–23 °C.

@@ -128,15 +128,23 @@ public final class FloraManager implements Listener {
         int baseX = chunkX << 4;
         int baseZ = chunkZ << 4;
         ThreadLocalRandom random = ThreadLocalRandom.current();
+        double maxDensity = plugin.config().main().maxFloraDensity();
+        double maxSpawnChance = Math.min(1.0, SPAWN_CHANCE_PER_COLUMN * maxDensity);
         for (int dx = 0; dx < 16; dx++) {
             for (int dz = 0; dz < 16; dz++) {
-                if (random.nextDouble() >= SPAWN_CHANCE_PER_COLUMN) {
+                if (random.nextDouble() >= maxSpawnChance) {
                     continue;
                 }
                 int x = baseX + dx;
                 int z = baseZ + dz;
                 Block top = world.getHighestBlockAt(x, z);
                 if (top.getType() != Material.GRASS_BLOCK) {
+                    continue;
+                }
+                String category = plugin.config().biomes().categoryFor(top.getBiome());
+                double density = plugin.config().main().floraDensityFor(category);
+                double spawnChance = Math.min(1.0, SPAWN_CHANCE_PER_COLUMN * density);
+                if (density <= 0.0 || random.nextDouble() >= spawnChance / maxSpawnChance) {
                     continue;
                 }
                 Block above = top.getRelative(0, 1, 0);
