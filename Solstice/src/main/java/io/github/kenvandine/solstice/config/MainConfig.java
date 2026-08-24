@@ -23,6 +23,7 @@ public record MainConfig(
         int snowIceBlocksPerTickPerRegion,
         boolean floraEnabled,
         Map<String, Double> floraBiomeDensity,
+        double maxFloraDensity,
         boolean winterCropsRequireRoof,
         double summerCropGrowthMultiplier,
         boolean summerHusks,
@@ -49,6 +50,14 @@ public record MainConfig(
             return density;
         }
         return floraBiomeDensity.getOrDefault("default", 1.0);
+    }
+
+    private static double computeMaxFloraDensity(Map<String, Double> floraBiomeDensity) {
+        double max = 1.0;
+        for (double density : floraBiomeDensity.values()) {
+            max = Math.max(max, density);
+        }
+        return max;
     }
 
     public static MainConfig load(FileConfiguration yaml) {
@@ -84,6 +93,7 @@ public record MainConfig(
                 yaml.getInt("world-effects.snow-ice.blocks-per-tick-per-region", 8),
                 yaml.getBoolean("world-effects.flora.enabled", true),
                 floraBiomeDensity,
+                computeMaxFloraDensity(floraBiomeDensity),
                 yaml.getBoolean("world-effects.crops.winter-requires-roof", true),
                 yaml.getDouble("world-effects.crops.summer-growth-multiplier", 2.0),
                 yaml.getBoolean("world-effects.mob-replacements.summer-husks", true),
