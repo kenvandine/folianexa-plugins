@@ -16,6 +16,7 @@ to submit a plugin here for catalog review).
 | Directory | What | catalog.yaml id |
 | --- | --- | --- |
 | `campus-lobby/` | Procedurally builds an NC State Wolfpack-themed lobby scene (Belltower, Brickyard plaza, wolf statue, more) | `CampusLobby` |
+| `flower-watch/` | Temporary, observation-only diagnostic plugin — logs the cause behind every flower-material block change and cross-references it against CoreProtect (see its own README) | *not yet cataloged* |
 | `folianexa-stats/` | Reports per-player kills/deaths/blocks-mined/playtime to mgmt's public player hub (PLAN.md §7A); softdepends on AuraSkills and Vault | `FoliaNexaStats` |
 | `hungergames/` | Configurable battle-royale minigame — queue-based arenas, shrinking world border, config-only maps and randomized "twists" | `HungerGames` |
 | `Solstice/` | Folia-native seasons, calendar, and temperature plugin — biome recoloring, ambient visuals, seasonal events | `Solstice` |

@@ -1,0 +1,68 @@
+# FlowerWatch — temporary diagnostic instrumentation for tracking down
+# unexplained dense flower spawning/destruction. See README.md for how
+# to read the log output and correlate it against CoreProtect.
+#
+# Edit, then run "/flowerwatch reload" — no restart needed.
+
+enabled: true
+
+# Which flower-related events to instrument. Turn any of these off if
+# you've already ruled it out, to cut log volume.
+events:
+  block-grow: true       # BlockGrowEvent — crop-style growth (e.g. torchflower crops)
+  block-spread: true     # BlockSpreadEvent — natural spreading (grass, etc. producing a flower)
+  block-form: true       # BlockFormEvent — passive world-driven block formation
+  block-fertilize: true  # BlockFertilizeEvent — bonemeal use, the most likely culprit for a
+                          # sudden burst: one bonemeal application on a grass block can place
+                          # many flowers/tall-grass blocks at once, and can be triggered by a
+                          # player, a dispenser, or a plugin calling the API directly.
+  structure-grow: true   # StructureGrowEvent — sapling/bonemeal-triggered structure growth
+  block-place: true      # BlockPlaceEvent — hand-placed (or dispenser/hopper-placed) flowers
+  block-break: true      # BlockBreakEvent — flowers being destroyed
+
+log:
+  # Relative to this plugin's data folder (plugins/FlowerWatch/).
+  file: logs/flowerwatch.log
+  max-file-size-mb: 10
+  max-files: 5
+
+density-scan:
+  # Periodically counts flower blocks per loaded chunk and logs a
+  # WARNING when a chunk's count jumps by more than alert-threshold
+  # since its last scan — catches a runaway burst even between
+  # individual events, e.g. if flowers are appearing faster than
+  # anyone is watching the live event log.
+  enabled: true
+  interval-seconds: 60
+  alert-threshold: 25
+
+  # Leave empty to scan every world; otherwise only scan the worlds
+  # named here. Recommended once you've narrowed the bug down to
+  # specific worlds — a full chunk scan is O(chunk volume) per chunk
+  # per scan and isn't free on a busy cluster.
+  worlds: []
+
+  # Bounds the scanned Y range to cut cost further. Defaults cover
+  # normal terrain/flower altitudes without wasting time scanning empty
+  # sky above it; raise max-y if you build much higher than that and
+  # still want those blocks counted.
+  min-y: -64
+  max-y: 192
+
+coreprotect:
+  # Best-effort only — never a hard requirement. If CoreProtect isn't
+  # installed/enabled, or its API doesn't match what FlowerWatch
+  # expects, this is silently skipped (logged once at startup) and
+  # FlowerWatch's own event log still works fine on its own.
+  enabled: true
+
+  # Look back this many seconds when asking CoreProtect what it
+  # recorded for the same block.
+  lookback-seconds: 5
+
+  # Safety valve: never do more than this many CoreProtect DB lookups
+  # in any 60-second window, so a runaway flower burst can't also
+  # hammer CoreProtect's database. Extra events in the same window are
+  # still logged by FlowerWatch itself, just without the CoreProtect
+  # cross-reference line.
+  max-lookups-per-minute: 60

@@ -1,0 +1,22 @@
+name: FlowerWatch
+version: '${version}'
+main: io.github.kenvandine.flowerwatch.FlowerWatchPlugin
+api-version: '1.21'
+folia-supported: true
+author: kenvandine
+description: >-
+  Observation-only diagnostic plugin: logs the cause behind every
+  flower-material block change and cross-references it against
+  CoreProtect, to track down a runaway flower-density bug.
+
+softdepend: [CoreProtect]
+
+commands:
+  flowerwatch:
+    description: FlowerWatch status and reload.
+    usage: /flowerwatch [status|reload]
+
+permissions:
+  flowerwatch.admin:
+    description: Use /flowerwatch status and /flowerwatch reload.
+    default: op
