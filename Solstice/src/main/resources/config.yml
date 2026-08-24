@@ -41,7 +41,7 @@ world-effects:
     # 1.0 = normal density, 0 = no flowers/berry bushes in that category, >1.0 = denser than normal.
     # "default" applies to any biome not listed here (or not categorized in biomes.yml).
     biome-density:
-      default: 1.0
+      default: 0.01
       temperate: 1.0
       hot: 1.0
       jungle: 1.0
