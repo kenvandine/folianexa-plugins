@@ -50,7 +50,9 @@ compile time).
   + optional CustomModelData, action-bar display, Celsius/Fahrenheit toggle.
 - **World effects** — winter water freeze/thaw spreading from shorelines, snow accumulation during
   storms, winter crops requiring a roof to grow, summer's 2x exposed-crop growth, summer
-  husk / winter stray mob replacement, autumn pumpkin-headed mobs.
+  husk / winter stray mob replacement, autumn pumpkin-headed mobs, spring flowers / summer berry
+  bushes with per-biome-category density (or disabled entirely) via `world-effects.flora.biome-density`
+  in `config.yml`.
 - **Visuals** — fireflies, shooting stars, falling leaves (spring/summer/autumn variants), winter
   night-sparks, cold-breath and sweat particles; client-side seasonal biome recoloring over
   PacketEvents (see "Biome colors" below).
@@ -233,6 +235,11 @@ especially before trusting the biome-color packet pipeline at all.
       should sparsely appear. `/solstice set summer` — sweet berry bushes should start appearing
       instead, and the spring flowers should clear. `/solstice set autumn` — both should clear with
       nothing replacing them.
+- [ ] **Flora density**: in `config.yml`, set your current biome's category under
+      `world-effects.flora.biome-density` to `0`, `/solstice reload` — that biome should stop
+      generating flowers/berry bushes entirely while other biomes are unaffected. Set it to a value
+      well above `1.0` (e.g. `5.0`) instead — flowers/berries should visibly appear denser than the
+      default rate in that biome, without suppressing generation in biomes still left at `1.0`.
 - [ ] **Mob replacements**: `/solstice set summer`, find/force a zombie spawn (e.g. a monster
       spawner or dark area) — should spawn as a husk instead. `/solstice set winter`, same for a
       skeleton spawner — should spawn as a stray. `/solstice set autumn`, spawn/observe a batch of
