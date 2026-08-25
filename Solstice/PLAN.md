@@ -129,6 +129,20 @@ progressively (block-by-block early, accelerating later); heavy passive spawns (
 rabbits, chickens) each with 3–5 babies; increased bee spawn rate; fireflies at night; day ≈ night.
 Temperature 5–23 °C.
 
+> **2026-08-25**: shipped `world-effects.flora.biome-density` defaults lowered from `1.0` to
+> `0.15` for every category (`default` for uncategorized biomes stays `0.01`, unchanged).
+> `FloraManager` rolls each eligible grass column independently every ~10s for as long as the
+> season stays active and never expires/thins existing flora mid-season, so at `1.0` — "generate
+> everywhere by default" above, matching the original mod's own documented behavior — density
+> compounds over a sustained season until nearly every eligible block ends up flowered. That's
+> not a bug in the roll logic, just a materially denser outcome than most operators running this
+> for the first time expect; one traced it back here after building a dedicated diagnostic
+> plugin (`flower-watch/` in this repo) to rule out CoreProtect/griefing/every other plugin
+> first, since a direct `Block#setType()` call like this fires no Bukkit event and is invisible
+> to CoreProtect and anything else event-driven. `0.15` keeps spring flower carpets/summer berry
+> patches visibly present without the saturation; still fully operator-tunable back up to `1.0`
+> (or beyond) via `config.yml` for anyone who wants the original "everywhere" behavior.
+
 **Summer** — vivid jungle-like green in most biomes; cold biomes keep plains coloring; hot biomes look
 dry; light-blue sky and water; shooting stars at night; fireflies at night; leaves fall from trees;
 spring flowers removed; berry bush patches generate; rain very rare; jungle animals spawn everywhere;

@@ -40,14 +40,24 @@ world-effects:
     # Spawn-chance multiplier per biome category (categories are defined in biomes.yml).
     # 1.0 = normal density, 0 = no flowers/berry bushes in that category, >1.0 = denser than normal.
     # "default" applies to any biome not listed here (or not categorized in biomes.yml).
+    #
+    # FloraManager rolls each eligible grass column independently every 10s for as long as
+    # the season stays active, and only stops rolling a given column once it's occupied — it
+    # never expires/thins existing flora mid-season. At 1.0 (this used to be the shipped
+    # default for every category below) that compounds over a sustained season until nearly
+    # every eligible block ends up flowered, which one operator found out the hard way while
+    # chasing what looked like a runaway flower-spawning bug (turned out to be this, not a
+    # bug — see flower-watch/ in this repo for how it was actually diagnosed). 0.15 keeps the
+    # spring flower carpets / summer berry patches visibly present without that saturation —
+    # tune to taste from here.
     biome-density:
       default: 0.01
-      temperate: 1.0
-      hot: 1.0
-      jungle: 1.0
-      savanna: 1.0
-      cold: 1.0
-      frozen: 1.0
+      temperate: 0.15
+      hot: 0.15
+      jungle: 0.15
+      savanna: 0.15
+      cold: 0.15
+      frozen: 0.15
   crops:
     winter-requires-roof: true
     summer-growth-multiplier: 2.0
