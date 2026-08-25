@@ -47,9 +47,13 @@ world-effects:
     # default for every category below) that compounds over a sustained season until nearly
     # every eligible block ends up flowered, which one operator found out the hard way while
     # chasing what looked like a runaway flower-spawning bug (turned out to be this, not a
-    # bug — see flower-watch/ in this repo for how it was actually diagnosed). 0.15 keeps the
-    # spring flower carpets / summer berry patches visibly present without that saturation —
-    # tune to taste from here.
+    # bug — see flower-watch/ in this repo for how it was actually diagnosed).
+    #
+    # IMPORTANT: this setting only controls how *fast* a chunk fills up, not how full it ever
+    # gets — at any density above 0, given enough sustained season time, coverage still
+    # approaches every eligible column (confirmed by the same operator: after lowering density
+    # from 1.0 to 0.15, saturation still eventually happened, just slower). max-per-chunk below
+    # is the actual ceiling; treat this as a "how quickly does it reach that ceiling" knob.
     biome-density:
       default: 0.01
       temperate: 0.15
@@ -58,6 +62,13 @@ world-effects:
       savanna: 0.15
       cold: 0.15
       frozen: 0.15
+    # Hard cap on how many flora blocks (flowers or berry bushes, whichever the current season
+    # generates) a single chunk accumulates before FloraManager stops adding more — this is
+    # what actually keeps it a sparse "carpet" instead of eventually blanketing every eligible
+    # block, independent of biome-density above. A chunk has 256 columns; 24 is roughly 9%
+    # coverage at full saturation against this cap. Individual flowers can still be broken and
+    # regrow beneath this ceiling as usual; only the chunk's total count is bounded.
+    max-per-chunk: 24
   crops:
     winter-requires-roof: true
     summer-growth-multiplier: 2.0

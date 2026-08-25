@@ -125,13 +125,26 @@ public final class FloraManager implements Listener {
 
     private void generate(World world, int chunkX, int chunkZ, ClaimGuard guard, Set<BlockPos> tracked,
                            java.util.function.Function<Block, Material> materialPicker) {
+        // biome-density alone only controls how *fast* a chunk fills up — at any positive
+        // density, given enough sustained season time, coverage still asymptotically
+        // approaches every eligible column, since nothing here ever expires/thins existing
+        // flora mid-season. max-per-chunk is the actual ceiling that keeps this a "carpet"
+        // instead of eventually blanketing every block that can hold one — confirmed by an
+        // operator who found lowering density alone only slowed that outcome down, not
+        // prevented it (see PLAN.md's 2026-08-25 note in §3.1).
+        int cap = plugin.config().main().maxFloraPerChunk();
+        int remainingBudget = cap - countInChunk(tracked, world, chunkX, chunkZ);
+        if (remainingBudget <= 0) {
+            return;
+        }
+
         int baseX = chunkX << 4;
         int baseZ = chunkZ << 4;
         ThreadLocalRandom random = ThreadLocalRandom.current();
         double maxDensity = plugin.config().main().maxFloraDensity();
         double maxSpawnChance = Math.min(1.0, SPAWN_CHANCE_PER_COLUMN * maxDensity);
-        for (int dx = 0; dx < 16; dx++) {
-            for (int dz = 0; dz < 16; dz++) {
+        for (int dx = 0; dx < 16 && remainingBudget > 0; dx++) {
+            for (int dz = 0; dz < 16 && remainingBudget > 0; dz++) {
                 if (random.nextDouble() >= maxSpawnChance) {
                     continue;
                 }
@@ -153,8 +166,26 @@ public final class FloraManager implements Listener {
                 }
                 above.setType(materialPicker.apply(top), false);
                 tracked.add(new BlockPos(world.getUID(), x, above.getY(), z));
+                remainingBudget--;
             }
         }
+    }
+
+    /**
+     * How many of {@code tracked}'s positions currently fall in this chunk — an O(all tracked
+     * positions, every world) scan, same cost {@link #revert} already pays for the same reason
+     * (this plugin doesn't keep a per-chunk index of an otherwise flat, global tracking set).
+     * Fine at the scale this feature operates at (a few dozen flora blocks per loaded chunk,
+     * capped by max-per-chunk itself); revisit with a real per-chunk index if that changes.
+     */
+    private static int countInChunk(Set<BlockPos> tracked, World world, int chunkX, int chunkZ) {
+        int count = 0;
+        for (BlockPos pos : tracked) {
+            if (pos.world().equals(world.getUID()) && (pos.x() >> 4) == chunkX && (pos.z() >> 4) == chunkZ) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void revert(World world, int chunkX, int chunkZ, ClaimGuard guard, Set<BlockPos> tracked) {
